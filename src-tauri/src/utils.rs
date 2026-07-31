@@ -114,10 +114,29 @@ pub fn is_kde_plasma() -> bool {
         || std::env::var("KDE_SESSION_VERSION").is_ok()
 }
 
+/// Check if running on GNOME (including ubuntu:GNOME).
+#[cfg(target_os = "linux")]
+pub fn is_gnome() -> bool {
+    std::env::var("XDG_CURRENT_DESKTOP")
+        .map(|v| {
+            let upper = v.to_uppercase();
+            upper.contains("GNOME") || upper.contains("UNITY")
+        })
+        .unwrap_or(false)
+        || std::env::var("GNOME_DESKTOP_SESSION_ID").is_ok()
+}
+
 /// Check if running on KDE Plasma with Wayland
 #[cfg(target_os = "linux")]
 pub fn is_kde_wayland() -> bool {
     is_wayland() && is_kde_plasma()
+}
+
+/// Whether `wtype` is worth trying. KDE and many GNOME/Mutter builds lack
+/// `zwp_virtual_keyboard_manager_v1`, so probing only produces noise.
+#[cfg(target_os = "linux")]
+pub fn compositor_supports_wtype() -> bool {
+    is_wayland() && !is_kde_plasma() && !is_gnome()
 }
 
 #[cfg(test)]

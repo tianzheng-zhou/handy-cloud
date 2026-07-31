@@ -3,14 +3,14 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{is_kde_wayland, is_wayland};
+use crate::utils::{compositor_supports_wtype, is_kde_wayland, is_wayland};
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
@@ -60,8 +60,14 @@ fn paste_via_clipboard(
     #[cfg(not(target_os = "linux"))]
     let key_combo_sent = false;
 
-    // Fall back to enigo if no native tool handled it
+    // Fall back to enigo if no native tool handled it.
+    // On GNOME Wayland enigo usually cannot inject into the focused app; we still
+    // attempt it, but must not restore the previous clipboard afterwards or the
+    // transcript becomes unavailable for a manual Ctrl+V.
+    let mut used_enigo_key_combo = false;
     if !key_combo_sent {
+        info!("Falling back to enigo for clipboard paste key combo");
+        used_enigo_key_combo = true;
         match paste_method {
             // The legacy path cannot detect a mistimed chord, so it keeps the
             // conservative 100ms modifier hold.
@@ -73,6 +79,19 @@ fn paste_via_clipboard(
     }
 
     std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
+
+    #[cfg(target_os = "linux")]
+    let skip_clipboard_restore = is_wayland() && used_enigo_key_combo;
+    #[cfg(not(target_os = "linux"))]
+    let skip_clipboard_restore = false;
+
+    if skip_clipboard_restore {
+        info!(
+            "Leaving transcript on the clipboard (Wayland enigo paste is unreliable; \
+             install ydotool/ydotoold for automatic Ctrl+V, or paste manually)"
+        );
+        return Ok(());
+    }
 
     // Restore original clipboard content.
     // Text takes priority so this path stays identical to the previous behavior;
@@ -100,38 +119,56 @@ fn paste_via_clipboard(
     Ok(())
 }
 
+/// Try a native tool; on failure log and continue so Auto can fall through
+/// (e.g. GNOME installs wtype but Mutter lacks virtual-keyboard protocol).
+#[cfg(target_os = "linux")]
+fn try_native_tool(name: &str, action: impl FnOnce() -> Result<(), String>) -> bool {
+    match action() {
+        Ok(()) => true,
+        Err(e) => {
+            warn!("{} failed, trying next paste backend: {}", name, e);
+            false
+        }
+    }
+}
+
 /// Attempts to send a key combination using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype (but not on KDE), then dotool, then ydotool
-        // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
-        if !is_kde_wayland() && is_wtype_available() {
+        // Wayland: prefer wtype when the compositor supports it, then dotool/ydotool.
+        if compositor_supports_wtype()
+            && is_wtype_available()
+            && try_native_tool("wtype", || send_key_combo_via_wtype(paste_method))
+        {
             info!("Using wtype for key combo");
-            send_key_combo_via_wtype(paste_method)?;
             return Ok(true);
         }
-        if is_dotool_available() {
+        if is_dotool_available()
+            && try_native_tool("dotool", || send_key_combo_via_dotool(paste_method))
+        {
             info!("Using dotool for key combo");
-            send_key_combo_via_dotool(paste_method)?;
             return Ok(true);
         }
-        if is_ydotool_available() {
+        if is_ydotool_available()
+            && try_native_tool("ydotool", || send_key_combo_via_ydotool(paste_method))
+        {
             info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
             return Ok(true);
         }
     } else {
         // X11: prefer xdotool, then ydotool
-        if is_xdotool_available() {
+        if is_xdotool_available()
+            && try_native_tool("xdotool", || send_key_combo_via_xdotool(paste_method))
+        {
             info!("Using xdotool for key combo");
-            send_key_combo_via_xdotool(paste_method)?;
             return Ok(true);
         }
-        if is_ydotool_available() {
+        if is_ydotool_available()
+            && try_native_tool("ydotool", || send_key_combo_via_ydotool(paste_method))
+        {
             info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
             return Ok(true);
         }
     }
@@ -178,41 +215,40 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
         };
     }
 
-    // Auto mode - existing fallback chain
+    // Auto mode - try each backend; compositor gaps (GNOME + wtype) must not abort.
     if is_wayland() {
         // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
-        if is_kde_wayland() && is_kwtype_available() {
+        if is_kde_wayland()
+            && is_kwtype_available()
+            && try_native_tool("kwtype", || type_text_via_kwtype(text))
+        {
             info!("Using kwtype for direct text input on KDE Wayland");
-            type_text_via_kwtype(text)?;
             return Ok(true);
         }
-        // Wayland: prefer wtype, then dotool, then ydotool
-        // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
-        if !is_kde_wayland() && is_wtype_available() {
+        // Wayland: prefer wtype when supported, then dotool, then ydotool.
+        if compositor_supports_wtype()
+            && is_wtype_available()
+            && try_native_tool("wtype", || type_text_via_wtype(text))
+        {
             info!("Using wtype for direct text input");
-            type_text_via_wtype(text)?;
             return Ok(true);
         }
-        if is_dotool_available() {
+        if is_dotool_available() && try_native_tool("dotool", || type_text_via_dotool(text)) {
             info!("Using dotool for direct text input");
-            type_text_via_dotool(text)?;
             return Ok(true);
         }
-        if is_ydotool_available() {
+        if is_ydotool_available() && try_native_tool("ydotool", || type_text_via_ydotool(text)) {
             info!("Using ydotool for direct text input");
-            type_text_via_ydotool(text)?;
             return Ok(true);
         }
     } else {
         // X11: prefer xdotool, then ydotool
-        if is_xdotool_available() {
+        if is_xdotool_available() && try_native_tool("xdotool", || type_text_via_xdotool(text)) {
             info!("Using xdotool for direct text input");
-            type_text_via_xdotool(text)?;
             return Ok(true);
         }
-        if is_ydotool_available() {
+        if is_ydotool_available() && try_native_tool("ydotool", || type_text_via_ydotool(text)) {
             info!("Using ydotool for direct text input");
-            type_text_via_ydotool(text)?;
             return Ok(true);
         }
     }
@@ -471,16 +507,53 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
     Ok(())
 }
 
+/// Ubuntu/Debian ship ydotool 0.1.8 which wants `ydotool key ctrl+v`.
+/// Newer ydotool 1.x wants raw `29:1 47:1 47:0 29:0`. Using the 1.x syntax on
+/// 0.1.8 is accepted (exit 0) but mis-parsed and can type garbage digits
+/// instead of pasting — hence detect which dialect to use.
+#[cfg(target_os = "linux")]
+fn ydotool_uses_named_key_combos() -> bool {
+    use std::sync::OnceLock;
+    static NAMED: OnceLock<bool> = OnceLock::new();
+    *NAMED.get_or_init(|| {
+        let output = Command::new("ydotool").args(["key", "--help"]).output();
+        match output {
+            Ok(o) => {
+                let text = format!(
+                    "{}{}",
+                    String::from_utf8_lossy(&o.stdout),
+                    String::from_utf8_lossy(&o.stderr)
+                );
+                text.contains("separated by plus")
+                    || text.contains("ctrl+Backspace")
+                    || text.contains("CTRL+alt")
+            }
+            // Prefer the distro-common 0.1.8 dialect when probing fails.
+            Err(_) => true,
+        }
+    })
+}
+
 /// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
 #[cfg(target_os = "linux")]
 fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> {
-    // ydotool uses Linux input event keycodes with format <keycode>:<pressed>
-    // where pressed is 1 for down, 0 for up. Keycodes: ctrl=29, shift=42, v=47, insert=110
-    let args: Vec<&str> = match paste_method {
-        PasteMethod::CtrlV => vec!["key", "29:1", "47:1", "47:0", "29:0"],
-        PasteMethod::ShiftInsert => vec!["key", "42:1", "110:1", "110:0", "42:0"],
-        PasteMethod::CtrlShiftV => vec!["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"],
-        _ => return Err("Unsupported paste method".into()),
+    let args: Vec<&str> = if ydotool_uses_named_key_combos() {
+        match paste_method {
+            PasteMethod::CtrlV => vec!["key", "ctrl+v"],
+            PasteMethod::ShiftInsert => vec!["key", "shift+Insert"],
+            PasteMethod::CtrlShiftV => vec!["key", "ctrl+shift+v"],
+            _ => return Err("Unsupported paste method".into()),
+        }
+    } else {
+        // ydotool 1.x: <keycode>:<pressed> (ctrl=29, shift=42, v=47, insert=110)
+        match paste_method {
+            PasteMethod::CtrlV => vec!["key", "29:1", "47:1", "47:0", "29:0"],
+            PasteMethod::ShiftInsert => vec!["key", "42:1", "110:1", "110:0", "42:0"],
+            PasteMethod::CtrlShiftV => {
+                vec!["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"]
+            }
+            _ => return Err("Unsupported paste method".into()),
+        }
     };
 
     let output = Command::new("ydotool")
