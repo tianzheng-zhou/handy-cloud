@@ -419,6 +419,9 @@ async changeShowTrayIconSetting(enabled: boolean) : Promise<Result<null, string>
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Legacy accelerator settings (local ASR removed). Persist only for migration.
+ */
 async changeTranscribeAcceleratorSetting(accelerator: TranscribeAcceleratorSetting) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_transcribe_accelerator_setting", { accelerator }) };
@@ -444,12 +447,7 @@ async changeTranscribeGpuDevice(device: number) : Promise<Result<null, string>> 
 }
 },
 /**
- * Return which accelerators and GPU devices are available for this build.
- * 
- * First-call cost is dominated by enumerating GPU devices through the
- * transcribe.cpp Metal/Vulkan backend, which loads dynamic libraries and
- * probes hardware. Run it on the blocking pool so the webview thread
- * stays responsive — see also the startup pre-warm in `lib.rs`.
+ * Local ASR accelerators were removed; return an empty capability set.
  */
 async getAvailableAccelerators() : Promise<AvailableAccelerators> {
     return await TAURI_INVOKE("get_available_accelerators");
@@ -605,13 +603,8 @@ async initializeShortcuts() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getCloudAsrModels() : Promise<Result<CloudAsrModelOption[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_cloud_asr_models") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
+async getCloudAsrModels() : Promise<CloudAsrModelOption[]> {
+    return await TAURI_INVOKE("get_cloud_asr_models");
 },
 async changeCloudAsrApiKey(apiKey: string) : Promise<Result<null, string>> {
     try {
@@ -802,10 +795,8 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 }
 },
 /**
- * Checks if the Mac is a laptop by detecting battery presence
- * 
- * This uses pmset to check for battery information.
- * Returns true if a battery is detected (laptop), false otherwise (desktop)
+ * Stub implementation for non-macOS platforms
+ * Always returns false since laptop detection is macOS-specific
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {
@@ -857,7 +848,15 @@ bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean
  * upgrading from before this key existed are blanked by the migration so they
  * see the current release's notes — see `apply_settings_migrations`.
  */
-whats_new_last_seen_version?: string; onboarding_completed?: boolean; cloud_asr_api_key?: string; cloud_asr_base_url?: string; cloud_asr_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+whats_new_last_seen_version?: string; 
+/**
+ * Legacy local-model id (kept for settings migration; unused by cloud ASR).
+ */
+selected_model?: string; onboarding_completed?: boolean; 
+/**
+ * DashScope / Bailian API key for Qwen Omni cloud transcription.
+ */
+cloud_asr_api_key?: string; cloud_asr_base_url?: string; cloud_asr_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
@@ -872,18 +871,11 @@ reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: strin
 overlay_style?: OverlayStyle }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
-export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
+export type AvailableAccelerators = { transcribe_cpu: boolean; transcribe_gpu: boolean; ort_cpu: boolean; ort_cuda: boolean; ort_directml: boolean; ort_rocm: boolean; gpu_devices: string[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
+export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CloudAsrModelOption = { id: string; label: string }
 export type CustomSounds = { start: boolean; stop: boolean }
-export type EngineType = 
-/**
- * Any GGML/GGUF model loaded through transcribe-cpp (Whisper, Parakeet,
- * Voxtral, Qwen3-ASR, Nemotron, …). The architecture is auto-detected from
- * the file, so this one variant covers the whole transcribe-cpp family.
- */
-"TranscribeCpp" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary" | "Cohere"
-export type GpuDeviceOption = { id: number; name: string; total_vram_mb: number }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
@@ -902,32 +894,6 @@ key_down: number; key_up: number; flags_changed: number; mouse: number; duration
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
-export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
-/**
- * Where a model comes from and how Handy obtains it — the routing discriminant
- * for downloading and on-disk resolution.
- */
-export type ModelSource = 
-/**
- * Direct HTTP download from a URL (current blob.handy.computer hosting).
- */
-{ Url: { url: string; 
-/**
- * Expected SHA-256 for integrity verification; `None` skips it.
- */
-sha256: string | null } } | 
-/**
- * A file inside a Hugging Face Hub repo, fetched via hf-hub into the shared
- * HF cache (so other tools reuse it). The file within the repo is
- * [`ModelInfo::filename`].
- */
-{ HuggingFace: { repo_id: string; revision: string } } | 
-/**
- * Already present on disk — a user-provided custom model, or one discovered
- * in a shared cache. Nothing to download.
- */
-"Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "top" | "bottom"
@@ -940,7 +906,6 @@ export type OverlayPosition = "top" | "bottom"
 export type OverlayStyle = "none" | "minimal" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
-export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
@@ -979,38 +944,6 @@ uncovered_bindings: string[];
 recorder_blocked: boolean }
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
-/**
- * Phase of the streaming overlay card, emitted to drive its UI state.
- */
-export type StreamPhase = 
-/**
- * Receiving audio / live text (or waiting for the stream to begin). Rust
- * does not emit this today; the frontend starts in this phase and Rust only
- * emits transitions away from it.
- */
-"listening" | 
-/**
- * Finalizing or post-processing — show a spinner.
- */
-"working"
-/**
- * Emitted to switch the streaming overlay to a working spinner.
- */
-export type StreamPhaseEvent = { phase: StreamPhase; 
-/**
- * Present only when `phase` is `Working`.
- */
-kind?: StreamWorkKind | null }
-/**
- * Live transcription snapshot emitted to the overlay during a streaming run.
- * `committed` is the append-only, flicker-free prefix; `tentative` is the
- * volatile suffix the model may still rewrite.
- */
-export type StreamTextEvent = { committed: string; tentative: string }
-/**
- * Semantic kind of "working" phase, used to localize the spinner label.
- */
-export type StreamWorkKind = "transcribing" | "polishing"
 /**
  * UI appearance mode. `System` follows the OS `prefers-color-scheme`; `Light`
  * and `Dark` force one of the two palettes Handy already ships.

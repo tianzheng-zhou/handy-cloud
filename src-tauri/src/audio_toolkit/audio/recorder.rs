@@ -392,10 +392,40 @@ impl AudioRecorder {
             }
         };
 
+        // ALSA/PipeWire can emit the same timestamp error on every period
+        // (e.g. get_htstamp earlier than get_trigger_htstamp). Rate-limit so
+        // the console stays usable while the stream is recovering or broken.
+        let err_state = Arc::new(Mutex::new((
+            Instant::now()
+                .checked_sub(Duration::from_secs(10))
+                .unwrap_or_else(Instant::now),
+            0u32,
+        )));
         device.build_input_stream(
             &config.clone().into(),
             stream_cb,
-            |err| log::error!("Stream error: {}", err),
+            move |err| {
+                let Ok(mut guard) = err_state.lock() else {
+                    return;
+                };
+                let (ref mut last, ref mut suppressed) = *guard;
+                let now = Instant::now();
+                if now.duration_since(*last) >= Duration::from_secs(2) {
+                    if *suppressed > 0 {
+                        log::error!(
+                            "Stream error: {} (and {} similar errors suppressed)",
+                            err,
+                            *suppressed
+                        );
+                    } else {
+                        log::error!("Stream error: {}", err);
+                    }
+                    *last = now;
+                    *suppressed = 0;
+                } else {
+                    *suppressed = suppressed.saturating_add(1);
+                }
+            },
             None,
         )
     }

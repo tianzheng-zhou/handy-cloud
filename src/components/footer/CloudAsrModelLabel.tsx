@@ -11,11 +11,12 @@ export const CloudAsrModelLabel: React.FC = () => {
   const currentModelId = getSetting("cloud_asr_model") ?? "";
 
   useEffect(() => {
-    commands.getCloudAsrModels().then((result) => {
-      if (result.status === "ok") {
-        setModelOptions(result.data);
-      }
-    });
+    commands
+      .getCloudAsrModels()
+      .then((options) => setModelOptions(options))
+      .catch((error) => {
+        console.error("Failed to load cloud ASR models:", error);
+      });
   }, []);
 
   const label = useMemo(() => {

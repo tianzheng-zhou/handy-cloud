@@ -24,11 +24,12 @@ export const CloudAsrSettings: React.FC = () => {
   const [modelOptions, setModelOptions] = useState<CloudAsrModelOption[]>([]);
 
   useEffect(() => {
-    commands.getCloudAsrModels().then((result) => {
-      if (result.status === "ok") {
-        setModelOptions(result.data);
-      }
-    });
+    commands
+      .getCloudAsrModels()
+      .then((options) => setModelOptions(options))
+      .catch((error) => {
+        console.error("Failed to load cloud ASR models:", error);
+      });
   }, []);
 
   const selectOptions = useMemo(
@@ -110,6 +111,7 @@ export const CloudAsrSettings: React.FC = () => {
               disabled={
                 isUpdatingKey("cloud_asr_model") || selectOptions.length === 0
               }
+              isClearable={false}
               className="flex-1"
             />
           </div>

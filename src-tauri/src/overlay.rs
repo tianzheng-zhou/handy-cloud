@@ -62,6 +62,12 @@ fn overlay_dimensions(state: &str) -> (f64, f64) {
 static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
 const EMIT_THROTTLE_MS: u64 = 33; // ~30 FPS
 
+/// Set when `init_gtk_layer_shell` succeeds. Anchor updates must not run
+/// otherwise — GTK prints CRITICAL spam ("not a layer surface") on compositors
+/// without wlr-layer-shell (or when HANDY_NO_GTK_LAYER_SHELL is set).
+#[cfg(target_os = "linux")]
+static GTK_LAYER_SHELL_ACTIVE: AtomicBool = AtomicBool::new(false);
+
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
@@ -75,6 +81,10 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
 
 #[cfg(target_os = "linux")]
 fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow) {
+    if !GTK_LAYER_SHELL_ACTIVE.load(Ordering::Relaxed) {
+        return;
+    }
+
     let window_clone = overlay_window.clone();
     let _ = overlay_window.run_on_main_thread(move || {
         // Try to get the GTK window from the Tauri webview
@@ -405,7 +415,9 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
             #[cfg(target_os = "linux")]
             {
                 // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
-                if init_gtk_layer_shell(&window) {
+                let layer_shell_ok = init_gtk_layer_shell(&window);
+                GTK_LAYER_SHELL_ACTIVE.store(layer_shell_ok, Ordering::Relaxed);
+                if layer_shell_ok {
                     debug!("GTK layer shell initialized for overlay window");
                 } else {
                     debug!("GTK layer shell not available, falling back to regular window");
