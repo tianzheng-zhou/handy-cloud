@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
@@ -52,6 +51,9 @@ interface SettingsStore {
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  updateCloudAsrApiKey: (apiKey: string) => Promise<void>;
+  updateCloudAsrBaseUrl: (baseUrl: string) => Promise<void>;
+  updateCloudAsrModel: (model: string) => Promise<void>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
 
   // Internal state setters
@@ -299,7 +301,12 @@ export const useSettingsStore = create<SettingsStore>()(
         const updater = settingUpdaters[key];
         if (updater) {
           await updater(value);
-        } else if (key !== "bindings" && key !== "selected_model") {
+        } else if (
+          key !== "bindings" &&
+          key !== "cloud_asr_api_key" &&
+          key !== "cloud_asr_base_url" &&
+          key !== "cloud_asr_model"
+        ) {
           console.warn(`No handler for setting: ${String(key)}`);
         }
       } catch (error) {
@@ -569,6 +576,60 @@ export const useSettingsStore = create<SettingsStore>()(
         },
       })),
 
+    updateCloudAsrApiKey: async (apiKey) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = "cloud_asr_api_key";
+      setUpdating(updateKey, true);
+      try {
+        const result = await commands.changeCloudAsrApiKey(apiKey);
+        if (result.status === "error") {
+          console.error("Failed to update cloud ASR API key:", result.error);
+          return;
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update cloud ASR API key:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateCloudAsrBaseUrl: async (baseUrl) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = "cloud_asr_base_url";
+      setUpdating(updateKey, true);
+      try {
+        const result = await commands.changeCloudAsrBaseUrl(baseUrl);
+        if (result.status === "error") {
+          console.error("Failed to update cloud ASR base URL:", result.error);
+          return;
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update cloud ASR base URL:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateCloudAsrModel: async (model) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = "cloud_asr_model";
+      setUpdating(updateKey, true);
+      try {
+        const result = await commands.changeCloudAsrModel(model);
+        if (result.status === "error") {
+          console.error("Failed to update cloud ASR model:", result.error);
+          return;
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update cloud ASR model:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
     // Load default settings from Rust
     loadDefaultSettings: async () => {
       try {
@@ -596,12 +657,6 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshSettings(),
         checkCustomSounds(),
       ]);
-
-      // Re-fetch settings when the backend changes them (e.g. language
-      // reset during model switch). The backend is the source of truth.
-      listen("model-state-changed", () => {
-        get().refreshSettings();
-      });
     },
   })),
 );

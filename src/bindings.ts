@@ -605,85 +605,41 @@ async initializeShortcuts() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
+async getCloudAsrModels() : Promise<Result<CloudAsrModelOption[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_available_models") };
+    return { status: "ok", data: await TAURI_INVOKE("get_cloud_asr_models") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async getModelInfo(modelId: string) : Promise<Result<ModelInfo | null, string>> {
+async changeCloudAsrApiKey(apiKey: string) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_model_info", { modelId }) };
+    return { status: "ok", data: await TAURI_INVOKE("change_cloud_asr_api_key", { apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async downloadModel(modelId: string) : Promise<Result<null, string>> {
+async changeCloudAsrBaseUrl(baseUrl: string) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("download_model", { modelId }) };
+    return { status: "ok", data: await TAURI_INVOKE("change_cloud_asr_base_url", { baseUrl }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async deleteModel(modelId: string) : Promise<Result<null, string>> {
+async changeCloudAsrModel(model: string) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("delete_model", { modelId }) };
+    return { status: "ok", data: await TAURI_INVOKE("change_cloud_asr_model", { model }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async cancelDownload(modelId: string) : Promise<Result<null, string>> {
+async completeCloudAsrOnboarding() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("cancel_download", { modelId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async setActiveModel(modelId: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("set_active_model", { modelId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getCurrentModel() : Promise<Result<string, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_current_model") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getTranscriptionModelStatus() : Promise<Result<string | null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_transcription_model_status") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async isModelLoading() : Promise<Result<boolean, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("is_model_loading") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Re-scan local sources (custom models dir + shared HF cache) for models added
- * since launch
- */
-async rescanLocalModels() : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("rescan_local_models") };
+    return { status: "ok", data: await TAURI_INVOKE("complete_cloud_asr_onboarding") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -789,25 +745,6 @@ async getClamshellMicrophone() : Promise<Result<string, string>> {
 async isRecording() : Promise<boolean> {
     return await TAURI_INVOKE("is_recording");
 },
-async setModelUnloadTimeout(timeout: ModelUnloadTimeout) : Promise<void> {
-    await TAURI_INVOKE("set_model_unload_timeout", { timeout });
-},
-async getModelLoadStatus() : Promise<Result<ModelLoadStatus, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_model_load_status") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async unloadModelManually() : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("unload_model_manually") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async getHistoryEntries(cursor: number | null, limit: number | null) : Promise<Result<PaginatedHistory, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_history_entries", { cursor, limit }) };
@@ -884,13 +821,9 @@ async isLaptop() : Promise<Result<boolean, string>> {
 
 
 export const events = __makeEvents__<{
-historyUpdatePayload: HistoryUpdatePayload,
-streamPhaseEvent: StreamPhaseEvent,
-streamTextEvent: StreamTextEvent
+historyUpdatePayload: HistoryUpdatePayload
 }>({
-historyUpdatePayload: "history-update-payload",
-streamPhaseEvent: "stream-phase-event",
-streamTextEvent: "stream-text-event"
+historyUpdatePayload: "history-update-payload"
 })
 
 /** user-defined constants **/
@@ -924,7 +857,7 @@ bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean
  * upgrading from before this key existed are blanked by the migration so they
  * see the current release's notes — see `apply_settings_migrations`.
  */
-whats_new_last_seen_version?: string; selected_model?: string; onboarding_completed?: boolean; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+whats_new_last_seen_version?: string; onboarding_completed?: boolean; cloud_asr_api_key?: string; cloud_asr_base_url?: string; cloud_asr_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
@@ -941,7 +874,7 @@ export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
-export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
+export type CloudAsrModelOption = { id: string; label: string }
 export type CustomSounds = { start: boolean; stop: boolean }
 export type EngineType = 
 /**
@@ -1007,6 +940,7 @@ export type OverlayPosition = "top" | "bottom"
 export type OverlayStyle = "none" | "minimal" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
+export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"

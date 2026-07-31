@@ -1291,15 +1291,7 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
-/// Save accelerator settings and make the next model use reload with them.
-/// The currently running transcription, if any, keeps its existing engine.
-fn save_accelerator_and_reload_next_use(app: &AppHandle, s: settings::AppSettings) {
-    settings::write_settings(app, s);
-
-    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
-    tm.reload_model_on_next_use();
-}
-
+/// Legacy accelerator settings (local ASR removed). Persist only for migration.
 #[tauri::command]
 #[specta::specta]
 pub fn change_transcribe_accelerator_setting(
@@ -1308,7 +1300,7 @@ pub fn change_transcribe_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.transcribe_accelerator = accelerator;
-    save_accelerator_and_reload_next_use(&app, s);
+    settings::write_settings(&app, s);
     Ok(())
 }
 
@@ -1320,7 +1312,7 @@ pub fn change_ort_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.ort_accelerator = accelerator;
-    save_accelerator_and_reload_next_use(&app, s);
+    settings::write_settings(&app, s);
     Ok(())
 }
 
@@ -1329,20 +1321,32 @@ pub fn change_ort_accelerator_setting(
 pub fn change_transcribe_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.transcribe_gpu_device = device;
-    save_accelerator_and_reload_next_use(&app, s);
+    settings::write_settings(&app, s);
     Ok(())
 }
 
-/// Return which accelerators and GPU devices are available for this build.
-///
-/// First-call cost is dominated by enumerating GPU devices through the
-/// transcribe.cpp Metal/Vulkan backend, which loads dynamic libraries and
-/// probes hardware. Run it on the blocking pool so the webview thread
-/// stays responsive — see also the startup pre-warm in `lib.rs`.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+pub struct AvailableAccelerators {
+    pub transcribe_cpu: bool,
+    pub transcribe_gpu: bool,
+    pub ort_cpu: bool,
+    pub ort_cuda: bool,
+    pub ort_directml: bool,
+    pub ort_rocm: bool,
+    pub gpu_devices: Vec<String>,
+}
+
+/// Local ASR accelerators were removed; return an empty capability set.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
-    tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
-        .await
-        .expect("get_available_accelerators panicked")
+pub async fn get_available_accelerators() -> AvailableAccelerators {
+    AvailableAccelerators {
+        transcribe_cpu: false,
+        transcribe_gpu: false,
+        ort_cpu: false,
+        ort_cuda: false,
+        ort_directml: false,
+        ort_rocm: false,
+        gpu_devices: Vec::new(),
+    }
 }

@@ -28,28 +28,23 @@ pub struct CliArgs {
     #[arg(long)]
     pub debug: bool,
 
-    /// Transcribe this WAV (16 kHz mono) headlessly and exit. Runs the same
-    /// batch transcription path as the app — no mic, no VAD, no download
-    /// (the model must already be installed).
+    /// Transcribe this WAV (16 kHz mono) headlessly via cloud ASR and exit.
     #[arg(short = 'f', long, value_name = "WAV")]
     pub transcribe_file: Option<PathBuf>,
 
-    /// Model id to load for --transcribe-file (default: the selected model).
+    /// Cloud ASR model id for --transcribe-file (default: settings cloud_asr_model).
     #[arg(long)]
     pub model: Option<String>,
 
-    /// Hard-select the compute device for --transcribe-file by its registry
-    /// index (see --list-devices). Omit to use the persisted accelerator
-    /// setting. transcribe-cpp (whisper-family) models only.
+    /// Legacy flag (local GPU devices removed). Accepted and ignored.
     #[arg(long, value_name = "N")]
     pub device_index: Option<usize>,
 
-    /// List the transcribe-cpp compute devices (with indices) and exit.
+    /// Legacy flag (local compute devices removed).
     #[arg(long)]
     pub list_devices: bool,
 
-    /// List the available models (with ids) and exit. Pass an id to --model.
-    /// Honors --json for machine-readable output.
+    /// List available cloud ASR models and exit.
     #[arg(long)]
     pub list_models: bool,
 

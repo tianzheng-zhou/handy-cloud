@@ -11,7 +11,7 @@ import {
   DebugSettings,
   AboutSettings,
   PostProcessingSettings,
-  ModelsSettings,
+  CloudAsrSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -44,10 +44,10 @@ export const SECTIONS_CONFIG = {
     component: HistorySettings,
     enabled: () => true,
   },
-  models: {
-    labelKey: "sidebar.models",
+  cloudAsr: {
+    labelKey: "sidebar.cloudAsr",
     icon: Cpu,
-    component: ModelsSettings,
+    component: CloudAsrSettings,
     enabled: () => true,
   },
   advanced: {

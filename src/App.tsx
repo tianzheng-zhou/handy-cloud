@@ -7,7 +7,7 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
+import { RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import SecureInputWarning from "./components/SecureInputWarning";
@@ -152,26 +152,6 @@ function App() {
     };
   }, [t]);
 
-  // Listen for model loading failures and show a toast
-  useEffect(() => {
-    const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
-      if (event.payload.event_type === "loading_failed") {
-        toast.error(
-          t("errors.modelLoadFailed", {
-            model:
-              event.payload.model_name || t("errors.modelLoadFailedUnknown"),
-          }),
-          {
-            description: event.payload.error,
-          },
-        );
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
   const revealMainWindowForPermissions = async () => {
     try {
       await commands.showMainWindowCommand();
@@ -240,21 +220,19 @@ function App() {
   };
 
   const handleAccessibilityComplete = () => {
-    // Returning users already have models, skip to main app
-    // New users need to select a model
+    // Returning users already completed setup; new users configure cloud ASR.
     setOnboardingStep(isReturningUser ? "done" : "model");
   };
 
-  const handleModelSelected = () => {
-    // Transition to main app - user has started a download
+  const handleCloudAsrOnboardingComplete = () => {
     setOnboardingStep("done");
   };
 
   // Rendered once around every step below (including onboarding) so
   // toast.error() calls surface to the user. sonner renders via a portal, so
   // its position in the tree doesn't affect layout. Without this, errors during
-  // onboarding (e.g. a model download failing because blob.handy.computer is
-  // unreachable) are silently swallowed and the wizard just appears to "blink".
+  // onboarding (e.g. cloud ASR setup failing) are silently swallowed and the
+  // wizard just appears to "blink".
   const toaster = (
     <Toaster
       theme="system"
@@ -286,7 +264,7 @@ function App() {
       <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
     );
   } else if (onboardingStep === "model") {
-    content = <Onboarding onModelSelected={handleModelSelected} />;
+    content = <Onboarding onComplete={handleCloudAsrOnboardingComplete} />;
   } else {
     content = (
       <div

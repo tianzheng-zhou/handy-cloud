@@ -45,28 +45,16 @@
     },
     "linux": {
       "deb": {
-        "depends": ["libgtk-layer-shell0", "libopenblas0"],
-        "files": {
-          "/usr/lib/Handy": "transcribe-libs"
-        }
+        "depends": ["libgtk-layer-shell0"]
       },
       "rpm": {
-        "depends": [
-          "libgtk-layer-shell.so.0()(64bit)",
-          "libopenblas.so.0()(64bit)"
-        ],
+        "depends": ["libgtk-layer-shell.so.0()(64bit)"],
         "compression": {
           "type": "none"
-        },
-        "files": {
-          "/usr/lib/Handy": "transcribe-libs"
         }
       },
       "appimage": {
-        "bundleMediaFramework": true,
-        "files": {
-          "/usr/lib": "transcribe-libs"
-        }
+        "bundleMediaFramework": true
       }
     },
     "windows": {

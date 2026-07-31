@@ -1,8 +1,7 @@
 use crate::actions::process_transcription_output;
-use crate::managers::{
-    history::{HistoryManager, PaginatedHistory},
-    transcription::TranscriptionManager,
-};
+use crate::dashscope_omni;
+use crate::managers::history::{HistoryManager, PaginatedHistory};
+use crate::settings::get_settings;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -64,7 +63,6 @@ pub async fn delete_history_entry(
 pub async fn retry_history_entry_transcription(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
-    transcription_manager: State<'_, Arc<TranscriptionManager>>,
     id: i64,
 ) -> Result<(), String> {
     let entry = history_manager
@@ -74,20 +72,21 @@ pub async fn retry_history_entry_transcription(
         .ok_or_else(|| format!("History entry {} not found", id))?;
 
     let audio_path = history_manager.get_audio_file_path(&entry.file_name);
-    let samples = crate::audio_toolkit::read_wav_samples(&audio_path)
-        .map_err(|e| format!("Failed to load audio: {}", e))?;
+    let settings = get_settings(&app);
+    let language_hint = if settings.selected_language == "auto" {
+        None
+    } else {
+        Some(settings.selected_language.as_str())
+    };
 
-    if samples.is_empty() {
-        return Err("Recording has no audio samples".to_string());
-    }
-
-    transcription_manager.initiate_model_load();
-
-    let tm = Arc::clone(&transcription_manager);
-    let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
-        .await
-        .map_err(|e| format!("Transcription task panicked: {}", e))?
-        .map_err(|e| e.to_string())?;
+    let transcription = dashscope_omni::transcribe_wav_file(
+        &settings.cloud_asr_api_key,
+        &settings.cloud_asr_base_url,
+        &settings.cloud_asr_model,
+        &audio_path,
+        language_hint,
+    )
+    .await?;
 
     if transcription.is_empty() {
         return Err("Recording contains no speech".to_string());

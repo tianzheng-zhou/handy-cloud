@@ -3,15 +3,13 @@
     "settings": "Settings...",
     "checkUpdates": "Check for Updates...",
     "copyLastTranscript": "Copy Last Transcript",
-    "unloadModel": "Unload Model",
-    "model": "Model",
     "quit": "Quit",
     "cancel": "Cancel",
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   },
   "sidebar": {
     "general": "General",
-    "models": "Models",
+    "cloudAsr": "Cloud ASR",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -19,7 +17,20 @@
     "about": "About"
   },
   "onboarding": {
-    "subtitle": "To get started, choose a transcription model",
+    "cloudAsr": {
+      "subtitle": "Connect your Alibaba Bailian (DashScope) API key to transcribe speech in the cloud",
+      "apiKey": {
+        "title": "Bailian API Key",
+        "description": "Your DashScope API key is stored locally and used for cloud transcription.",
+        "placeholder": "sk-..."
+      },
+      "continue": "Continue",
+      "continueLoading": "Saving…",
+      "errors": {
+        "apiKeyRequired": "An API key is required to continue",
+        "setupFailed": "Failed to save your API key. Please try again."
+      }
+    },
     "existingModelsTitle": "Compatible Models",
     "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
@@ -154,9 +165,33 @@
       "streaming": "Shows live transcription as you speak"
     }
   },
+  "footer": {
+    "cloudAsrModel": "{{model}}"
+  },
   "settings": {
+    "cloudAsr": {
+      "title": "Cloud ASR",
+      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen3.5-Omni.",
+      "groupTitle": "Connection",
+      "apiKey": {
+        "title": "API Key",
+        "description": "Your DashScope API key for cloud speech recognition.",
+        "placeholder": "sk-..."
+      },
+      "baseUrl": {
+        "title": "Base URL",
+        "description": "DashScope OpenAI-compatible endpoint. Change only if you use a custom gateway.",
+        "placeholder": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "model": {
+        "title": "Model",
+        "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
+        "placeholder": "Select a model…"
+      }
+    },
     "modelSettings": {
-      "title": "{{model}} Settings"
+      "title": "{{model}} Settings",
+      "cloudTitle": "Transcription"
     },
     "general": {
       "title": "General",
@@ -284,11 +319,10 @@
       "overlay": {
         "style": {
           "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill while recording and transcribing. On Linux 'None' is recommended.",
           "options": {
             "none": "None",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Minimal"
           }
         },
         "position": {
@@ -367,7 +401,7 @@
       },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "description": "Filter silence from recordings before cloud transcription. Disabling VAD records raw audio."
       }
     },
     "postProcessing": {
@@ -590,7 +624,7 @@
         "ggml": {
           "title": "ggml",
           "description": "High-performance tensor library for on-device machine learning inference",
-          "details": "Handy's local speech-to-text is built on transcribe.cpp and ggml. Thanks to the amazing work by Georgi Gerganov and contributors."
+          "details": "Handy uses Alibaba Bailian (DashScope) Qwen3.5-Omni for cloud speech recognition, with Silero VAD for local voice activity detection."
         }
       }
     }

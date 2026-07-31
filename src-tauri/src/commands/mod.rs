@@ -1,7 +1,6 @@
 pub mod audio;
+pub mod cloud_asr;
 pub mod history;
-pub mod models;
-pub mod transcription;
 
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
 use crate::utils::cancel_current_operation;

@@ -1,5 +1,4 @@
 use crate::managers::audio::AudioRecordingManager;
-use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
 use log::info;
@@ -26,6 +25,7 @@ fn native_machine_is_arm64(native_machine: Option<u16>) -> bool {
 /// Detection is deliberately fail-open: a native x64 host, an older Windows
 /// version without `IsWow64Process2`, or any API error leaves existing behavior
 /// unchanged.
+#[allow(dead_code)] // Kept for platform diagnostics; local GPU path was removed.
 pub fn is_windows_x64_emulated_on_arm64() -> bool {
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     {
@@ -84,16 +84,9 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
 
-    // Abandon any live streaming transcription
-    let tm = app.state::<Arc<TranscriptionManager>>();
-    tm.cancel_stream();
-
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
-
-    // Unload model if immediate unload is enabled
-    tm.maybe_unload_immediately("cancellation");
 
     // Notify coordinator so it can keep lifecycle state coherent.
     if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {

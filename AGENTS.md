@@ -40,12 +40,14 @@ bun run format:frontend   # Prettier only
 bun run format:backend    # cargo fmt only
 ```
 
-**Model Setup (Required for Development):**
+**VAD Model Setup (Required for Development):**
 
 ```bash
 mkdir -p src-tauri/resources/models
 curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
 ```
+
+Speech transcription uses Alibaba Bailian (DashScope) Qwen3.5-Omni cloud ASR. Configure the API key in the app settings (or onboarding). Local Whisper/Parakeet engines were removed.
 
 For detailed platform-specific build setup, see [BUILD.md](BUILD.md).
 
@@ -58,13 +60,13 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `lib.rs` - Main entry point, Tauri setup, manager initialization
 - `managers/` - Core business logic:
   - `audio.rs` - Audio recording and device management
-  - `model.rs` - Model downloading and management
-  - `transcription.rs` - Speech-to-text processing pipeline
   - `history.rs` - Transcription history storage
+  - `transcription.rs` - StreamRouter stub (cloud ASR is batch-only)
+- `dashscope_omni.rs` - Alibaba Bailian / DashScope Qwen3.5-Omni cloud transcription client
 - `audio_toolkit/` - Low-level audio processing:
   - `audio/` - Device enumeration, recording, resampling
   - `vad/` - Voice Activity Detection (Silero VAD)
-- `commands/` - Tauri command handlers for frontend communication
+- `commands/` - Tauri command handlers (including `cloud_asr`)
 - `cli.rs` - CLI argument definitions (clap derive)
 - `shortcut.rs` - Global keyboard shortcut handling
 - `settings.rs` - Application settings management
@@ -76,9 +78,8 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 - `App.tsx` - Main component with onboarding flow
 - `components/` - React UI components:
-  - `settings/` - Settings UI
-  - `model-selector/` - Model management interface
-  - `onboarding/` - First-run experience
+  - `settings/` - Settings UI (including `cloud-asr/`)
+  - `onboarding/` - First-run Bailian API key setup
   - `overlay/` - Recording overlay UI
   - `update-checker/` - App update notifications
   - `shared/`, `ui/`, `icons/`, `footer/` - Shared components
@@ -90,11 +91,11 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 ### Key Architecture Patterns
 
-**Manager Pattern:** Core functionality organized into managers (Audio, Model, Transcription) initialized at startup and managed via Tauri state.
+**Manager Pattern:** Audio and history managers initialized at startup and managed via Tauri state.
 
 **Command-Event Architecture:** Frontend → Backend via Tauri commands; Backend → Frontend via events.
 
-**Pipeline Processing:** Audio → VAD → Whisper/Parakeet → Text output → Clipboard/Paste
+**Pipeline Processing:** Audio → VAD → DashScope Qwen Omni (cloud) → Text output → Clipboard/Paste
 
 **State Flow:** Zustand → Tauri Command → Rust State → Persistence (tauri-plugin-store)
 
@@ -102,8 +103,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 **Core Libraries:**
 
-- `transcribe-cpp` - Local Whisper-family inference (GGML/GGUF) with GPU acceleration
-- `transcribe-rs` - ONNX speech recognition (Parakeet, Moonshine, SenseVoice, etc.)
+- DashScope OpenAI-compatible HTTP API (`qwen3.5-omni-flash` / `qwen3.5-omni-plus`)
 - `cpal` - Cross-platform audio I/O
 - `vad-rs` - Voice Activity Detection
 - `rdev` - Global keyboard shortcuts
@@ -113,9 +113,9 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 ### Application Flow
 
 1. **Initialization:** App starts minimized to tray, loads settings, initializes managers
-2. **Model Setup:** First-run downloads preferred Whisper model (Small/Medium/Turbo/Large)
+2. **Cloud ASR Setup:** First-run configures Bailian / DashScope API key
 3. **Recording:** Global shortcut triggers audio recording with VAD filtering
-4. **Processing:** Audio sent to Whisper model for transcription
+4. **Processing:** WAV uploaded to Qwen3.5-Omni for transcription
 5. **Output:** Text pasted to active application via system clipboard
 
 ### Settings System
@@ -124,7 +124,7 @@ Settings are stored using Tauri's store plugin with reactive updates:
 
 - Keyboard shortcuts (configurable, supports push-to-talk)
 - Audio devices (microphone/output selection)
-- Model preferences (Small/Medium/Turbo/Large Whisper variants)
+- Cloud ASR (API key, base URL, Omni Flash/Plus model)
 - Audio feedback and translation options
 
 ### Single Instance Architecture

@@ -209,6 +209,7 @@ impl Default for PasteMethod {
 }
 
 impl ModelUnloadTimeout {
+    #[allow(dead_code)] // Legacy setting retained for store migration.
     pub fn to_minutes(self) -> Option<u64> {
         match self {
             ModelUnloadTimeout::Never => None,
@@ -222,6 +223,7 @@ impl ModelUnloadTimeout {
         }
     }
 
+    #[allow(dead_code)] // Legacy setting retained for store migration.
     pub fn to_seconds(self) -> Option<u64> {
         match self {
             ModelUnloadTimeout::Never => None,
@@ -369,10 +371,18 @@ pub struct AppSettings {
     /// see the current release's notes — see `apply_settings_migrations`.
     #[serde(default = "default_whats_new_last_seen_version")]
     pub whats_new_last_seen_version: String,
+    /// Legacy local-model id (kept for settings migration; unused by cloud ASR).
     #[serde(default = "default_model")]
     pub selected_model: String,
     #[serde(default)]
     pub onboarding_completed: bool,
+    /// DashScope / Bailian API key for Qwen Omni cloud transcription.
+    #[serde(default)]
+    pub cloud_asr_api_key: String,
+    #[serde(default = "default_cloud_asr_base_url")]
+    pub cloud_asr_base_url: String,
+    #[serde(default = "default_cloud_asr_model")]
+    pub cloud_asr_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -475,6 +485,14 @@ fn default_model() -> String {
     "".to_string()
 }
 
+fn default_cloud_asr_base_url() -> String {
+    crate::dashscope_omni::DEFAULT_BASE_URL.to_string()
+}
+
+fn default_cloud_asr_model() -> String {
+    crate::dashscope_omni::MODEL_FLASH.to_string()
+}
+
 const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 1;
 
 fn default_settings_schema_version() -> u32 {
@@ -524,12 +542,11 @@ fn default_overlay_position() -> OverlayPosition {
 }
 
 fn default_overlay_style() -> OverlayStyle {
-    // Linux hides the overlay by default; other platforms show the live overlay.
-    // Position is independent and only selects top vs. bottom placement.
+    // Cloud ASR is batch-only — no live streaming overlay.
     #[cfg(target_os = "linux")]
     return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
-    return OverlayStyle::Live;
+    return OverlayStyle::Minimal;
 }
 
 fn default_vad_enabled() -> bool {
@@ -855,6 +872,9 @@ pub fn get_default_settings() -> AppSettings {
         whats_new_last_seen_version: default_whats_new_last_seen_version(),
         selected_model: "".to_string(),
         onboarding_completed: false,
+        cloud_asr_api_key: String::new(),
+        cloud_asr_base_url: default_cloud_asr_base_url(),
+        cloud_asr_model: default_cloud_asr_model(),
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -1037,7 +1057,8 @@ fn apply_settings_migrations(
     // already made it through model selection. Users who merely have compatible
     // files on disk should still see onboarding.
     if settings_value.get("onboarding_completed").is_none() {
-        settings.onboarding_completed = !settings.selected_model.is_empty();
+        settings.onboarding_completed =
+            !settings.cloud_asr_api_key.is_empty() || !settings.selected_model.is_empty();
         updated = true;
     }
 
@@ -1070,9 +1091,7 @@ fn apply_settings_migrations(
 
     // One-time overlay migration (only while the new key is absent): the retired
     // overlay_position `none` meant "hide the overlay" → OverlayStyle::None; any
-    // other position had it visible → Live. The position enum no longer has a
-    // `none` variant (legacy "none" deserializes to Bottom via a serde alias), so
-    // read the raw stored string to recover the old intent.
+    // other position had it visible → Minimal (cloud ASR has no live overlay).
     if settings_value.get("overlay_style").is_none() {
         let was_hidden = settings_value
             .get("overlay_position")
@@ -1081,8 +1100,14 @@ fn apply_settings_migrations(
         settings.overlay_style = if was_hidden {
             OverlayStyle::None
         } else {
-            OverlayStyle::Live
+            OverlayStyle::Minimal
         };
+        updated = true;
+    }
+
+    // Cloud ASR is batch-only — demote any stored Live style to Minimal.
+    if matches!(settings.overlay_style, OverlayStyle::Live) {
+        settings.overlay_style = OverlayStyle::Minimal;
         updated = true;
     }
 
@@ -1367,9 +1392,9 @@ mod tests {
 
     #[cfg(not(target_os = "linux"))]
     #[test]
-    fn default_overlay_style_is_live_when_overlay_defaults_on() {
+    fn default_overlay_style_is_minimal_when_overlay_defaults_on() {
         let settings = get_default_settings();
-        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert_eq!(settings.overlay_style, OverlayStyle::Minimal);
     }
 
     #[test]
@@ -1398,10 +1423,10 @@ mod tests {
     }
 
     #[test]
-    fn overlay_migration_promotes_enabled_overlay_to_live() {
+    fn overlay_migration_promotes_enabled_overlay_to_minimal() {
         let mut settings = get_default_settings();
         settings.overlay_position = OverlayPosition::Top;
-        settings.overlay_style = OverlayStyle::Minimal;
+        settings.overlay_style = OverlayStyle::None;
 
         let raw = serde_json::json!({
             "selected_model": "",
@@ -1409,7 +1434,7 @@ mod tests {
         });
 
         assert!(apply_settings_migrations(&mut settings, &raw));
-        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert_eq!(settings.overlay_style, OverlayStyle::Minimal);
         assert_eq!(settings.overlay_position, OverlayPosition::Top);
     }
 
