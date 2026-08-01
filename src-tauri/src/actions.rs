@@ -5,6 +5,7 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::dashscope_omni;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::screen_context;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
@@ -468,6 +469,15 @@ impl ShortcutAction for TranscribeAction {
         } else {
             VadPolicy::Disabled
         };
+        // Capture screen before the overlay appears so the shot matches what the
+        // user is looking at when they press the hotkey. Omni-only.
+        if settings.cloud_asr_screen_context
+            && dashscope_omni::supports_screen_context(&settings.cloud_asr_model)
+        {
+            screen_context::kickoff_capture(app);
+        } else {
+            screen_context::clear();
+        }
         let plan_elapsed = plan_started.elapsed();
 
         let overlay_started = Instant::now();
@@ -534,6 +544,7 @@ impl ShortcutAction for TranscribeAction {
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
+            screen_context::clear();
             utils::hide_recording_overlay(app);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
@@ -659,6 +670,21 @@ impl ShortcutAction for TranscribeAction {
                     } else {
                         Some(settings.selected_language.as_str())
                     };
+                    let screen_jpeg = if settings.cloud_asr_screen_context
+                        && dashscope_omni::supports_screen_context(&settings.cloud_asr_model)
+                    {
+                        let jpeg = screen_context::take_jpeg();
+                        if jpeg.is_none() {
+                            warn!(
+                                "Screen context is enabled but no screenshot is available; sending audio only"
+                            );
+                        }
+                        jpeg
+                    } else {
+                        screen_context::clear();
+                        None
+                    };
+                    let screen_jpeg_ref = screen_jpeg.as_deref();
 
                     let transcription_result = if wav_saved {
                         dashscope_omni::transcribe_wav_file(
@@ -667,14 +693,12 @@ impl ShortcutAction for TranscribeAction {
                             &settings.cloud_asr_model,
                             &wav_path_for_verify,
                             language_hint,
+                            screen_jpeg_ref,
                         )
                         .await
                     } else {
                         // Fallback: encode samples to a temp WAV in memory via the same path
-                        match crate::audio_toolkit::save_wav_file(
-                            &wav_path_for_verify,
-                            &samples,
-                        ) {
+                        match crate::audio_toolkit::save_wav_file(&wav_path_for_verify, &samples) {
                             Ok(()) => {
                                 dashscope_omni::transcribe_wav_file(
                                     &settings.cloud_asr_api_key,
@@ -682,10 +706,11 @@ impl ShortcutAction for TranscribeAction {
                                     &settings.cloud_asr_model,
                                     &wav_path_for_verify,
                                     language_hint,
+                                    screen_jpeg_ref,
                                 )
                                 .await
                             }
-                            Err(e) =>                             Err(format!("Failed to prepare WAV for cloud ASR: {e}")),
+                            Err(e) => Err(format!("Failed to prepare WAV for cloud ASR: {e}")),
                         }
                     };
 
@@ -955,5 +980,4 @@ mod tests {
             "<think>never closed"
         );
     }
-
 }

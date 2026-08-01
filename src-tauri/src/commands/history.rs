@@ -85,6 +85,7 @@ pub async fn retry_history_entry_transcription(
         &settings.cloud_asr_model,
         &audio_path,
         language_hint,
+        None,
     )
     .await?;
 

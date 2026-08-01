@@ -5,7 +5,7 @@
 
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use futures_util::StreamExt;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -14,8 +14,15 @@ pub const DEFAULT_BASE_URL: &str = "https://dashscope.aliyuncs.com/compatible-mo
 pub const MODEL_FLASH: &str = "qwen3.5-omni-flash";
 pub const MODEL_PLUS: &str = "qwen3.5-omni-plus";
 
+/// Screen-context (image + audio) is only wired for current Qwen3.5-Omni models.
+pub fn supports_screen_context(model: &str) -> bool {
+    matches!(model, MODEL_FLASH | MODEL_PLUS)
+}
+
 const TRANSCRIBE_PROMPT: &str =
     "请将这段音频原样转写为文字。只输出转写结果，不要添加解释、标点说明或前后缀。";
+
+const TRANSCRIBE_WITH_SCREEN_PROMPT: &str = "你将收到一张屏幕截图和一段用户语音。请结合截图理解用户所指的界面元素（按钮、文字、字段等），把语音转写为最终应输入的文字。若语音是在描述或指代屏幕内容，用截图消歧；不要描述截图本身。只输出最终文本，不要添加解释、标点说明或前后缀。";
 
 #[derive(Debug, Deserialize)]
 struct StreamChunk {
@@ -40,12 +47,16 @@ struct ApiErrorBody {
 }
 
 /// Transcribe a WAV file (bytes) via DashScope Qwen Omni.
+///
+/// When `screen_jpeg` is provided, it is attached as a local Base64 data URI
+/// (`data:image/jpeg;base64,...`) — not a public HTTP URL — per Bailian docs.
 pub async fn transcribe_wav(
     api_key: &str,
     base_url: &str,
     model: &str,
     wav_bytes: &[u8],
     language_hint: Option<&str>,
+    screen_jpeg: Option<&[u8]>,
 ) -> Result<String, String> {
     if api_key.trim().is_empty() {
         return Err(
@@ -63,7 +74,14 @@ pub async fn transcribe_wav(
     let b64 = BASE64.encode(wav_bytes);
     let data_uri = format!("data:audio/wav;base64,{}", b64);
 
-    let mut prompt = TRANSCRIBE_PROMPT.to_string();
+    // Never attach images for non-Omni models, even if a caller passed bytes.
+    let screen_jpeg = screen_jpeg.filter(|_| supports_screen_context(model));
+    let has_screen = screen_jpeg.map(|b| !b.is_empty()).unwrap_or(false);
+    let mut prompt = if has_screen {
+        TRANSCRIBE_WITH_SCREEN_PROMPT.to_string()
+    } else {
+        TRANSCRIBE_PROMPT.to_string()
+    };
     if let Some(lang) = language_hint {
         let lang = lang.trim();
         if !lang.is_empty() && lang != "auto" {
@@ -71,23 +89,31 @@ pub async fn transcribe_wav(
         }
     }
 
+    let mut content = Vec::new();
+    if let Some(jpeg) = screen_jpeg.filter(|b| !b.is_empty()) {
+        let image_uri = format!("data:image/jpeg;base64,{}", BASE64.encode(jpeg));
+        content.push(json!({
+            "type": "image_url",
+            "image_url": { "url": image_uri }
+        }));
+    }
+    content.push(json!({
+        "type": "input_audio",
+        "input_audio": {
+            "data": data_uri,
+            "format": "wav"
+        }
+    }));
+    content.push(json!({
+        "type": "text",
+        "text": prompt
+    }));
+
     let body = json!({
         "model": model,
         "messages": [{
             "role": "user",
-            "content": [
-                {
-                    "type": "input_audio",
-                    "input_audio": {
-                        "data": data_uri,
-                        "format": "wav"
-                    }
-                },
-                {
-                    "type": "text",
-                    "text": prompt
-                }
-            ]
+            "content": content
         }],
         "modalities": ["text"],
         "stream": true,
@@ -109,12 +135,22 @@ pub async fn transcribe_wav(
         .build()
         .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
 
-    debug!(
-        "DashScope Omni transcribe: model={} url={} wav_bytes={}",
-        model,
-        url,
-        wav_bytes.len()
-    );
+    let screen_bytes = screen_jpeg.map(|b| b.len()).unwrap_or(0);
+    if screen_bytes > 0 {
+        info!(
+            "DashScope Omni request: model={} wav={} KB + screen JPEG={} KB (multimodal)",
+            model,
+            wav_bytes.len() / 1024,
+            screen_bytes / 1024
+        );
+    } else {
+        info!(
+            "DashScope Omni request: model={} wav={} KB (audio only)",
+            model,
+            wav_bytes.len() / 1024
+        );
+    }
+    debug!("DashScope Omni url={}", url);
 
     let response = client
         .post(&url)
@@ -215,10 +251,11 @@ pub async fn transcribe_wav_file(
     model: &str,
     wav_path: &std::path::Path,
     language_hint: Option<&str>,
+    screen_jpeg: Option<&[u8]>,
 ) -> Result<String, String> {
     let bytes = std::fs::read(wav_path)
         .map_err(|e| format!("Failed to read WAV {}: {}", wav_path.display(), e))?;
-    transcribe_wav(api_key, base_url, model, &bytes, language_hint).await
+    transcribe_wav(api_key, base_url, model, &bytes, language_hint, screen_jpeg).await
 }
 
 #[cfg(test)]
@@ -234,5 +271,13 @@ mod tests {
     fn parse_content() {
         let line = r#"data: {"choices":[{"delta":{"content":"你好"}}]}"#;
         assert_eq!(parse_sse_line(line).unwrap().as_deref(), Some("你好"));
+    }
+
+    #[test]
+    fn screen_context_only_for_omni_models() {
+        assert!(supports_screen_context(MODEL_FLASH));
+        assert!(supports_screen_context(MODEL_PLUS));
+        assert!(!supports_screen_context("qwen-audio-asr"));
+        assert!(!supports_screen_context(""));
     }
 }

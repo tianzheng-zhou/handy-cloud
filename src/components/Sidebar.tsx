@@ -93,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
+    <div className="flex flex-col w-40 shrink-0 h-full border-e border-mid-gray/20 items-center px-2">
       <HandyTextLogo width={120} className="m-4" />
       <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
         {availableSections.map((section) => {
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <div
               key={section.id}
-              className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${
+              className={`flex gap-2 items-center p-2 w-full min-w-0 rounded-lg cursor-pointer transition-colors ${
                 isActive
                   ? "bg-logo-primary/80"
                   : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Icon width={24} height={24} className="shrink-0" />
               <p
-                className="text-sm font-medium truncate"
+                className="text-sm font-medium leading-tight break-words min-w-0"
                 title={t(section.labelKey)}
               >
                 {t(section.labelKey)}

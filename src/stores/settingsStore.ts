@@ -54,6 +54,7 @@ interface SettingsStore {
   updateCloudAsrApiKey: (apiKey: string) => Promise<void>;
   updateCloudAsrBaseUrl: (baseUrl: string) => Promise<void>;
   updateCloudAsrModel: (model: string) => Promise<void>;
+  updateCloudAsrScreenContext: (enabled: boolean) => Promise<void>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
 
   // Internal state setters
@@ -78,6 +79,20 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
 const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
 } = {
+  cloud_asr_screen_context: async (value) => {
+    const result = await commands.changeCloudAsrScreenContext(value as boolean);
+    if (result.status === "error") {
+      throw new Error(String(result.error));
+    }
+  },
+  cloud_asr_screen_capture_method: async (value) => {
+    const result = await commands.changeCloudAsrScreenCaptureMethod(
+      value as string,
+    );
+    if (result.status === "error") {
+      throw new Error(String(result.error));
+    }
+  },
   always_on_microphone: (value) =>
     commands.updateMicrophoneMode(value as boolean),
   audio_feedback: (value) =>
@@ -305,7 +320,9 @@ export const useSettingsStore = create<SettingsStore>()(
           key !== "bindings" &&
           key !== "cloud_asr_api_key" &&
           key !== "cloud_asr_base_url" &&
-          key !== "cloud_asr_model"
+          key !== "cloud_asr_model" &&
+          key !== "cloud_asr_screen_context" &&
+          key !== "cloud_asr_screen_capture_method"
         ) {
           console.warn(`No handler for setting: ${String(key)}`);
         }
@@ -314,6 +331,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (settings) {
           set({ settings: { ...settings, [key]: originalValue } });
         }
+        throw error;
       } finally {
         setUpdating(updateKey, false);
       }
@@ -625,6 +643,27 @@ export const useSettingsStore = create<SettingsStore>()(
         await refreshSettings();
       } catch (error) {
         console.error("Failed to update cloud ASR model:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateCloudAsrScreenContext: async (enabled) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = "cloud_asr_screen_context";
+      setUpdating(updateKey, true);
+      try {
+        const result = await commands.changeCloudAsrScreenContext(enabled);
+        if (result.status === "error") {
+          console.error(
+            "Failed to update cloud ASR screen context:",
+            result.error,
+          );
+          return;
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update cloud ASR screen context:", error);
       } finally {
         setUpdating(updateKey, false);
       }

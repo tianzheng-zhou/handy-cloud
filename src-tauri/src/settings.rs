@@ -1,14 +1,24 @@
 use log::{debug, warn};
+use once_cell::sync::Lazy;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::Mutex;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+
+/// Serialize settings writes so concurrent get→modify→write cannot drop fields
+/// (e.g. ScreenCast restore token wiped by a racing settings update).
+static SETTINGS_WRITE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+/// Stored outside the main settings blob so token survival does not depend on
+/// every AppSettings read-modify-write staying perfectly ordered.
+const SCREENCAST_TOKEN_STORE_KEY: &str = "screencast_restore_token";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -153,6 +163,17 @@ pub enum PasteMethod {
     ShiftInsert,
     CtrlShiftV,
     ExternalScript,
+}
+
+/// How to capture the screen for Omni multimodal context (Linux).
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ScreenCaptureMethod {
+    /// xdg-desktop-portal Screenshot (may flash / play shutter on GNOME).
+    #[default]
+    Screenshot,
+    /// xdg-desktop-portal ScreenCast + one PipeWire frame (silent after share grant).
+    Screencast,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -383,6 +404,15 @@ pub struct AppSettings {
     pub cloud_asr_base_url: String,
     #[serde(default = "default_cloud_asr_model")]
     pub cloud_asr_model: String,
+    /// When true, capture the primary screen (JPEG) as multimodal context for Omni.
+    #[serde(default)]
+    pub cloud_asr_screen_context: bool,
+    /// Capture backend for screen context (Screenshot portal vs ScreenCast).
+    #[serde(default)]
+    pub cloud_asr_screen_capture_method: ScreenCaptureMethod,
+    /// xdg-desktop-portal ScreenCast restore token for silent re-capture.
+    #[serde(default)]
+    pub cloud_asr_screencast_restore_token: Option<String>,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -875,6 +905,9 @@ pub fn get_default_settings() -> AppSettings {
         cloud_asr_api_key: String::new(),
         cloud_asr_base_url: default_cloud_asr_base_url(),
         cloud_asr_model: default_cloud_asr_model(),
+        cloud_asr_screen_context: false,
+        cloud_asr_screen_capture_method: ScreenCaptureMethod::default(),
+        cloud_asr_screencast_restore_token: None,
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -1115,11 +1148,89 @@ fn apply_settings_migrations(
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
+    let _guard = SETTINGS_WRITE_LOCK
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    write_settings_unlocked(app, settings);
+}
+
+fn write_settings_unlocked(app: &AppHandle, settings: AppSettings) {
     let store = app
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     store.set("settings", serde_json::to_value(&settings).unwrap());
+    if let Err(e) = store.save() {
+        warn!("Failed to flush settings store: {e}");
+    }
+}
+
+/// Atomically read-modify-write app settings under the write lock.
+pub fn update_settings<R>(app: &AppHandle, f: impl FnOnce(&mut AppSettings) -> R) -> R {
+    let _guard = SETTINGS_WRITE_LOCK
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    // Load directly from the store (do not call get_settings — it may write
+    // migrations and must not nest under this lock via write_settings).
+    let store = app
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .expect("Failed to initialize store");
+    let mut settings = store
+        .get("settings")
+        .and_then(|v| serde_json::from_value::<AppSettings>(v).ok())
+        .unwrap_or_else(get_default_settings);
+    let out = f(&mut settings);
+    write_settings_unlocked(app, settings);
+    out
+}
+
+/// ScreenCast portal restore token (Linux). Prefer the dedicated store key.
+pub fn get_screencast_restore_token(app: &AppHandle) -> Option<String> {
+    let store = app
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .ok()?;
+    if let Some(value) = store.get(SCREENCAST_TOKEN_STORE_KEY) {
+        if let Some(token) = value.as_str().filter(|s| !s.is_empty()) {
+            return Some(token.to_string());
+        }
+    }
+    get_settings(app)
+        .cloud_asr_screencast_restore_token
+        .filter(|s| !s.is_empty())
+}
+
+pub fn set_screencast_restore_token(app: &AppHandle, token: Option<String>) {
+    let _guard = SETTINGS_WRITE_LOCK
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let store = app
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .expect("Failed to initialize store");
+
+    match &token {
+        Some(t) if !t.is_empty() => {
+            store.set(
+                SCREENCAST_TOKEN_STORE_KEY,
+                serde_json::Value::String(t.clone()),
+            );
+        }
+        _ => {
+            let _ = store.delete(SCREENCAST_TOKEN_STORE_KEY);
+        }
+    }
+
+    // Keep mirrored field in sync for debugging / older code paths.
+    let mut settings = if let Some(settings_value) = store.get("settings") {
+        serde_json::from_value::<AppSettings>(settings_value)
+            .unwrap_or_else(|_| get_default_settings())
+    } else {
+        get_default_settings()
+    };
+    settings.cloud_asr_screencast_restore_token = token.filter(|s| !s.is_empty());
+    store.set("settings", serde_json::to_value(&settings).unwrap());
+    if let Err(e) = store.save() {
+        warn!("Failed to flush screencast token to store: {e}");
+    }
 }
 
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {

@@ -14,6 +14,7 @@ mod managers;
 mod overlay;
 mod paste_tx;
 pub mod portable;
+mod screen_context;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -433,6 +434,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
             &model_id,
             &wav,
             language_hint,
+            None,
         )) {
             Ok(out) => text = out,
             Err(e) => {
@@ -550,6 +552,8 @@ pub fn run(cli_args: CliArgs) {
             commands::cloud_asr::change_cloud_asr_api_key,
             commands::cloud_asr::change_cloud_asr_base_url,
             commands::cloud_asr::change_cloud_asr_model,
+            commands::cloud_asr::change_cloud_asr_screen_context,
+            commands::cloud_asr::change_cloud_asr_screen_capture_method,
             commands::cloud_asr::complete_cloud_asr_onboarding,
             commands::audio::update_microphone_mode,
             commands::audio::get_microphone_mode,

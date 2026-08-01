@@ -9,7 +9,7 @@
   },
   "sidebar": {
     "general": "General",
-    "cloudAsr": "Cloud ASR",
+    "cloudAsr": "ASR",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -185,8 +185,19 @@
       },
       "model": {
         "title": "Model",
+        "groupTitle": "Models",
         "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
         "placeholder": "Select a model…"
+      },
+      "models": {
+        "flash": {
+          "name": "Qwen3.5-Omni Flash",
+          "description": "Fast and cost-efficient. Best default for everyday dictation."
+        },
+        "plus": {
+          "name": "Qwen3.5-Omni Plus",
+          "description": "Higher accuracy for noisy audio and careful transcription. Slightly slower."
+        }
       }
     },
     "modelSettings": {
@@ -402,6 +413,20 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings before cloud transcription. Disabling VAD records raw audio."
+      },
+      "screenContext": {
+        "label": "Use screen as context",
+        "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
+        "authorizeFailed": "Could not authorize screen capture. Keep Handy in front and allow the system dialog.",
+        "method": {
+          "title": "Screen capture method",
+          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy focused and wait for authorization to finish before recording.",
+
+          "options": {
+            "screenshot": "Screenshot (may flash)",
+            "screencast": "ScreenCast (silent)"
+          }
+        }
       }
     },
     "postProcessing": {

@@ -61,6 +61,7 @@ rodio = { git = "https://github.com/cjpais/rodio.git" }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 futures-util = "0.3"
 base64 = "0.22"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 rustfft = "6.4.0"
 strsim = "0.11.0"
 natural = "0.5.0"
@@ -111,6 +112,17 @@ objc2-app-kit = "0.3"
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
+# Portal APIs for screen context. ScreenCast avoids GNOME screenshot flash/sound;
+# frame grab uses system gst-launch + pipewiresrc (no libpipewire-dev needed).
+ashpd = { version = "0.13", default-features = false, features = [
+  "tokio",
+  "screenshot",
+  "screencast",
+] }
+libc = "0.2"
+
+[target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
+xcap = "0.9"
 
 # TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
 # (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
