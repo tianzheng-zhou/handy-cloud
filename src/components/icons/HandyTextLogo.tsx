@@ -16,7 +16,6 @@ const HandyTextLogo = ({
       <svg
         width={width}
         height={height}
-
         viewBox="0 0 930 328"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"

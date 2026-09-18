@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { RefreshCcw } from "lucide-react";
-import { commands } from "@/bindings";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 import { Alert } from "../../ui/Alert";
 import {
@@ -145,8 +145,11 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
 
 const PostProcessingSettingsPromptsComponent: React.FC = () => {
   const { t } = useTranslation();
-  const { getSetting, updateSetting, isUpdating, refreshSettings } =
-    useSettings();
+  const { getSetting, updateSetting, isUpdating } = useSettings();
+  const savePrompt = useSettingsStore((state) => state.savePostProcessPrompt);
+  const deletePrompt = useSettingsStore(
+    (state) => state.deletePostProcessPrompt,
+  );
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftText, setDraftText] = useState("");
@@ -183,15 +186,8 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!draftName.trim() || !draftText.trim()) return;
 
     try {
-      const result = await commands.addPostProcessPrompt(
-        draftName.trim(),
-        draftText.trim(),
-      );
-      if (result.status === "ok") {
-        await refreshSettings();
-        updateSetting("post_process_selected_prompt_id", result.data.id);
-        setIsCreating(false);
-      }
+      await savePrompt({ name: draftName.trim(), prompt: draftText.trim() });
+      setIsCreating(false);
     } catch (error) {
       console.error("Failed to create prompt:", error);
     }
@@ -201,12 +197,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!selectedPromptId || !draftName.trim() || !draftText.trim()) return;
 
     try {
-      await commands.updatePostProcessPrompt(
-        selectedPromptId,
-        draftName.trim(),
-        draftText.trim(),
-      );
-      await refreshSettings();
+      await savePrompt({
+        id: selectedPromptId,
+        name: draftName.trim(),
+        prompt: draftText.trim(),
+      });
     } catch (error) {
       console.error("Failed to update prompt:", error);
     }
@@ -216,8 +211,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!promptId) return;
 
     try {
-      await commands.deletePostProcessPrompt(promptId);
-      await refreshSettings();
+      await deletePrompt(promptId);
       setIsCreating(false);
     } catch (error) {
       console.error("Failed to delete prompt:", error);
@@ -328,7 +322,12 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 onClick={handleUpdatePrompt}
                 variant="primary"
                 size="md"
-                disabled={!draftName.trim() || !draftText.trim() || !isDirty}
+                disabled={
+                  isUpdating("post_process") ||
+                  !draftName.trim() ||
+                  !draftText.trim() ||
+                  !isDirty
+                }
               >
                 {t("settings.postProcessing.prompts.updatePrompt")}
               </Button>
@@ -336,7 +335,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 onClick={() => handleDeletePrompt(selectedPromptId)}
                 variant="secondary"
                 size="md"
-                disabled={!selectedPromptId || prompts.length <= 1}
+                disabled={
+                  isUpdating("post_process") ||
+                  !selectedPromptId ||
+                  prompts.length <= 1
+                }
               >
                 {t("settings.postProcessing.prompts.deletePrompt")}
               </Button>
@@ -395,7 +398,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 onClick={handleCreatePrompt}
                 variant="primary"
                 size="md"
-                disabled={!draftName.trim() || !draftText.trim()}
+                disabled={
+                  isUpdating("post_process") ||
+                  !draftName.trim() ||
+                  !draftText.trim()
+                }
               >
                 {t("settings.postProcessing.prompts.createPrompt")}
               </Button>

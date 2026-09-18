@@ -7,15 +7,15 @@ import { SettingsGroup } from "../../ui/SettingsGroup";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
 import { PushToTalk } from "../PushToTalk";
 import { AudioFeedback } from "../AudioFeedback";
-import { useSettings } from "../../../hooks/useSettings";
+import { useSetting } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { audioFeedbackEnabled, getSetting } = useSettings();
-  const pushToTalk = getSetting("push_to_talk");
+  const audioFeedbackEnabled = useSetting("audio_feedback") ?? false;
+  const pushToTalk = useSetting("push_to_talk");
   const isLinux = type() === "linux";
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">

@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
 
@@ -15,11 +19,16 @@ interface PasteMethodProps {
 export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_paste_method = useSetting("paste_method");
+    const setting_external_script_path = useSetting("external_script_path");
+    const updating_paste_method = useSettingUpdating("paste_method");
+    const updating_external_script_path = useSettingUpdating(
+      "external_script_path",
+    );
     const osType = useOsType();
 
-    const selectedMethod = (getSetting("paste_method") ||
-      "ctrl_v") as PasteMethod;
+    const selectedMethod = (setting_paste_method || "ctrl_v") as PasteMethod;
 
     const getPasteMethodOptions = (osType: string) => {
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
@@ -77,7 +86,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
       return options;
     };
 
-    const externalScriptPath = getSetting("external_script_path") || "";
+    const externalScriptPath = setting_external_script_path || "";
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
 
@@ -96,7 +105,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
             onSelect={(value) =>
               updateSetting("paste_method", value as PasteMethod)
             }
-            disabled={isUpdating("paste_method")}
+            disabled={updating_paste_method}
           />
           {selectedMethod === "external_script" && (
             <Input
@@ -108,7 +117,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
               placeholder={t(
                 "settings.advanced.pasteMethod.externalScriptPlaceholder",
               )}
-              disabled={isUpdating("external_script_path")}
+              disabled={updating_external_script_path}
             />
           )}
         </div>

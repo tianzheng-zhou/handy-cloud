@@ -1,18 +1,26 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import { useSettings } from "../../hooks/useSettings";
+import { useSetting, useSettingsActions } from "../../hooks/useSettings";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { findReleaseNoteToShow } from "./releaseNotes";
 import type { ReleaseNote } from "./releaseNotes";
-import { WhatsNewModal } from "./WhatsNewModal";
+const WhatsNewModal = lazy(() =>
+  import("./WhatsNewModal").then((module) => ({
+    default: module.WhatsNewModal,
+  })),
+);
 
 export const WhatsNewGate: React.FC = () => {
-  const { settings, isLoading, updateSetting } = useSettings();
+  const enabled = useSetting("show_whats_new_on_update");
+  const lastSeenVersion = useSetting("whats_new_last_seen_version");
+  const isLoading = useSettingsStore((state) => state.isLoading);
+  const { updateSetting } = useSettingsActions();
   const [note, setNote] = useState<ReleaseNote | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dismissedVersionRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isLoading || !settings || !settings.show_whats_new_on_update) {
+    if (isLoading || !enabled) {
       setIsOpen(false);
       setNote(null);
       return;
@@ -27,7 +35,7 @@ export const WhatsNewGate: React.FC = () => {
 
         const releaseNote = findReleaseNoteToShow({
           currentVersion,
-          lastSeenVersion: settings.whats_new_last_seen_version ?? "",
+          lastSeenVersion: lastSeenVersion ?? "",
         });
 
         if (
@@ -51,12 +59,7 @@ export const WhatsNewGate: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [
-    isLoading,
-    settings,
-    settings?.show_whats_new_on_update,
-    settings?.whats_new_last_seen_version,
-  ]);
+  }, [isLoading, enabled, lastSeenVersion]);
 
   const dismiss = () => {
     if (!note) return;
@@ -68,5 +71,9 @@ export const WhatsNewGate: React.FC = () => {
 
   if (!note) return null;
 
-  return <WhatsNewModal note={note} open={isOpen} onDismiss={dismiss} />;
+  return (
+    <Suspense fallback={null}>
+      <WhatsNewModal note={note} open={isOpen} onDismiss={dismiss} />
+    </Suspense>
+  );
 };

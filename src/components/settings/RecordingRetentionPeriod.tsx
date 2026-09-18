@@ -2,7 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import { RecordingRetentionPeriod } from "@/bindings";
 
 interface RecordingRetentionPeriodProps {
@@ -13,14 +17,21 @@ interface RecordingRetentionPeriodProps {
 export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriodProps> =
   React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_recording_retention_period = useSetting(
+      "recording_retention_period",
+    );
+    const setting_history_limit = useSetting("history_limit");
+    const updating_recording_retention_period = useSettingUpdating(
+      "recording_retention_period",
+    );
 
     const selectedRetentionPeriod =
-      getSetting("recording_retention_period") || "never";
-    const historyLimit = getSetting("history_limit") || 5;
+      setting_recording_retention_period || "never";
+    const historyLimit = setting_history_limit || 5;
 
-    const handleRetentionPeriodSelect = async (period: string) => {
-      await updateSetting(
+    const handleRetentionPeriodSelect = (period: string) => {
+      return updateSetting(
         "recording_retention_period",
         period as RecordingRetentionPeriod,
       );
@@ -54,7 +65,7 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
           selectedValue={selectedRetentionPeriod}
           onSelect={handleRetentionPeriodSelect}
           placeholder={t("settings.debug.recordingRetention.placeholder")}
-          disabled={isUpdating("recording_retention_period")}
+          disabled={updating_recording_retention_period}
         />
       </SettingContainer>
     );

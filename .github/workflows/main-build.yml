@@ -1,12 +1,11 @@
 name: "Main Branch Build"
 
-# Runs the full cross-platform build on every push to main so breakage is
-# caught before a manual release is triggered. Artifacts are kept for 30 days
-# so any commit on main has a downloadable, testable build.
-
+# Unsigned packages are built only on explicit request; no Release is created.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,7 +14,7 @@ concurrency:
 jobs:
   build:
     permissions:
-      contents: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -48,5 +47,3 @@ jobs:
       target: ${{ matrix.target }}
       build-args: ${{ matrix.args }}
       upload-artifacts: true
-      sign-binaries: false
-    secrets: inherit

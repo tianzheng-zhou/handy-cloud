@@ -1,5 +1,5 @@
 import React from "react";
-import { useSettings } from "../../hooks/useSettings";
+import { useSetting } from "../../hooks/useSettings";
 import { GlobalShortcutInput } from "./GlobalShortcutInput";
 import { HandyKeysShortcutInput } from "./HandyKeysShortcutInput";
 
@@ -18,8 +18,9 @@ interface ShortcutInputProps {
  * - "handy_keys": Uses HandyKeysShortcutInput with backend key events
  */
 export const ShortcutInput: React.FC<ShortcutInputProps> = (props) => {
-  const { getSetting } = useSettings();
-  const keyboardImplementation = getSetting("keyboard_implementation");
+  const setting_keyboard_implementation = useSetting("keyboard_implementation");
+
+  const keyboardImplementation = setting_keyboard_implementation;
 
   // Default to Tauri implementation if not set
   if (keyboardImplementation === "handy_keys") {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import { useEffect, useState, useRef, Suspense, type ReactNode } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
@@ -15,7 +15,7 @@ import Footer from "./components/footer";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
-import { useSettings } from "./hooks/useSettings";
+import { useSetting, useSettingsActions } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
@@ -25,7 +25,11 @@ type OnboardingStep = "accessibility" | "model" | "done";
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
-  return <ActiveComponent />;
+  return (
+    <Suspense fallback={null}>
+      <ActiveComponent />
+    </Suspense>
+  );
 };
 
 function App() {
@@ -38,7 +42,8 @@ function App() {
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
-  const { settings, updateSetting } = useSettings();
+  const debugMode = useSetting("debug_mode");
+  const { updateSetting } = useSettingsActions();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
     (state) => state.refreshAudioDevices,
@@ -93,7 +98,7 @@ function App() {
 
       if (isDebugShortcut) {
         event.preventDefault();
-        const currentDebugMode = settings?.debug_mode ?? false;
+        const currentDebugMode = debugMode ?? false;
         updateSetting("debug_mode", !currentDebugMode);
       }
     };
@@ -105,7 +110,7 @@ function App() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [settings?.debug_mode, updateSetting]);
+  }, [debugMode, updateSetting]);
 
   useEffect(() => {
     const unlisten = listen("recording-save-error", () => {
@@ -181,10 +186,9 @@ function App() {
 
   const checkOnboardingStatus = async () => {
     try {
-      const settingsResult = await commands.getAppSettings();
+      await useSettingsStore.getState().initialize();
       const hasCompletedOnboarding =
-        settingsResult.status === "ok" &&
-        settingsResult.data.onboarding_completed === true;
+        useSettingsStore.getState().settings?.onboarding_completed === true;
       const currentPlatform = platform();
 
       if (hasCompletedOnboarding) {

@@ -4,7 +4,7 @@ import { Dropdown, DropdownOption } from "../ui/Dropdown";
 import { PlayIcon } from "lucide-react";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { useSettings } from "../../hooks/useSettings";
+import { useSetting, useSettingsActions } from "../../hooks/useSettings";
 
 interface SoundPickerProps {
   label: string;
@@ -15,11 +15,13 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
   label,
   description,
 }) => {
-  const { getSetting, updateSetting } = useSettings();
+  const { updateSetting } = useSettingsActions();
+  const setting_sound_theme = useSetting("sound_theme");
+
   const playTestSound = useSettingsStore((state) => state.playTestSound);
   const customSounds = useSettingsStore((state) => state.customSounds);
 
-  const selectedTheme = getSetting("sound_theme") ?? "marimba";
+  const selectedTheme = setting_sound_theme ?? "marimba";
 
   const options: DropdownOption[] = [
     { value: "marimba", label: "Marimba" },

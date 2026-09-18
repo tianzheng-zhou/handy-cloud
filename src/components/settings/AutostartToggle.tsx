@@ -1,7 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 
 interface AutostartToggleProps {
   descriptionMode?: "inline" | "tooltip";
@@ -11,15 +15,17 @@ interface AutostartToggleProps {
 export const AutostartToggle: React.FC<AutostartToggleProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_autostart_enabled = useSetting("autostart_enabled");
+    const updating_autostart_enabled = useSettingUpdating("autostart_enabled");
 
-    const autostartEnabled = getSetting("autostart_enabled") ?? false;
+    const autostartEnabled = setting_autostart_enabled ?? false;
 
     return (
       <ToggleSwitch
         checked={autostartEnabled}
         onChange={(enabled) => updateSetting("autostart_enabled", enabled)}
-        isUpdating={isUpdating("autostart_enabled")}
+        isUpdating={updating_autostart_enabled}
         label={t("settings.advanced.autostart.label")}
         description={t("settings.advanced.autostart.description")}
         descriptionMode={descriptionMode}

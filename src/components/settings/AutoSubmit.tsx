@@ -2,7 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { AutoSubmitKey } from "@/bindings";
 
@@ -17,11 +21,14 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const osType = useOsType();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_auto_submit = useSetting("auto_submit");
+    const setting_auto_submit_key = useSetting("auto_submit_key");
+    const updating_auto_submit = useSettingUpdating("auto_submit");
+    const updating_auto_submit_key = useSettingUpdating("auto_submit_key");
 
-    const enabled = getSetting("auto_submit") ?? false;
-    const selectedKey = (getSetting("auto_submit_key") ||
-      "enter") as AutoSubmitKey;
+    const enabled = setting_auto_submit ?? false;
+    const selectedKey = (setting_auto_submit_key || "enter") as AutoSubmitKey;
     const selectedValue: AutoSubmitOptionValue = enabled ? selectedKey : "off";
     const submitWithMetaLabel =
       osType === "macos"
@@ -74,7 +81,7 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
           onSelect={(value) => {
             void handleAutoSubmitSelect(value).catch(() => {});
           }}
-          disabled={isUpdating("auto_submit") || isUpdating("auto_submit_key")}
+          disabled={updating_auto_submit || updating_auto_submit_key}
         />
       </SettingContainer>
     );

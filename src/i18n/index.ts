@@ -2,30 +2,55 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { locale } from "@tauri-apps/plugin-os";
 import { LANGUAGE_METADATA } from "./languages";
-import { commands } from "@/bindings";
+import { useSettingsStore } from "@/stores/settingsStore";
+import english from "./locales/en/translation.json";
 import {
   getLanguageDirection,
   updateDocumentDirection,
   updateDocumentLanguage,
 } from "@/lib/utils/rtl";
 
-// Auto-discover translation files using Vite's glob import
-const localeModules = import.meta.glob<{ default: Record<string, unknown> }>(
+// English is the only eager locale. i18next waits for the selected locale and
+// caches it; Vite emits a separate chunk for each remaining language.
+const localeModules = import.meta.glob<{ default: Record<string, unknown> }>([
   "./locales/*/translation.json",
-  { eager: true },
-);
+  "!./locales/en/translation.json",
+]);
+const languageCodes = [
+  "en",
+  ...Object.keys(localeModules).map((path) => path.split("/")[2]),
+];
+const loads = new Map<string, Promise<Record<string, unknown>>>();
+const localeBackend = {
+  type: "backend" as const,
+  init() {},
+  read(
+    language: string,
+    _namespace: string,
+    callback: (
+      error: Error | null,
+      data: Record<string, unknown> | false,
+    ) => void,
+  ) {
+    const loader = localeModules[`./locales/${language}/translation.json`];
+    if (!loader) {
+      callback(null, {});
+      return;
+    }
+    let pending = loads.get(language);
+    if (!pending) {
+      pending = loader().then((module) => module.default);
+      loads.set(language, pending);
+      void pending.catch(() => loads.delete(language));
+    }
+    void pending.then(
+      (data) => callback(null, data),
+      (error) => callback(error, false),
+    );
+  },
+};
 
-// Build resources from discovered locale files
-const resources: Record<string, { translation: Record<string, unknown> }> = {};
-for (const [path, module] of Object.entries(localeModules)) {
-  const langCode = path.match(/\.\/locales\/(.+)\/translation\.json/)?.[1];
-  if (langCode) {
-    resources[langCode] = { translation: module.default };
-  }
-}
-
-// Build supported languages list from discovered locales + metadata
-export const SUPPORTED_LANGUAGES = Object.keys(resources)
+export const SUPPORTED_LANGUAGES = languageCodes
   .map((code) => {
     const meta = LANGUAGE_METADATA[code];
     if (!meta) {
@@ -87,24 +112,31 @@ export const getSupportedLanguage = (
 
 // Initialize i18n with English as default
 // Language will be synced from settings after init
-i18n.use(initReactI18next).init({
-  resources,
-  lng: "en",
-  fallbackLng: "en",
-  interpolation: {
-    escapeValue: false, // React already escapes values
-  },
-  react: {
-    useSuspense: false, // Disable suspense for SSR compatibility
-  },
-});
+i18n
+  .use(localeBackend)
+  .use(initReactI18next)
+  .init({
+    resources: { en: { translation: english } },
+    partialBundledLanguages: true,
+    supportedLngs: languageCodes,
+    load: "currentOnly",
+    lng: "en",
+    fallbackLng: "en",
+    interpolation: {
+      escapeValue: false, // React already escapes values
+    },
+    react: {
+      useSuspense: false, // Disable suspense for SSR compatibility
+    },
+  });
 
 // Sync language from app settings
 export const syncLanguageFromSettings = async () => {
   try {
-    const result = await commands.getAppSettings();
-    if (result.status === "ok" && result.data.app_language) {
-      const supported = getSupportedLanguage(result.data.app_language);
+    await useSettingsStore.getState().initialize();
+    const language = useSettingsStore.getState().settings?.app_language;
+    if (language) {
+      const supported = getSupportedLanguage(language);
       if (supported && supported !== i18n.language) {
         await i18n.changeLanguage(supported);
       }

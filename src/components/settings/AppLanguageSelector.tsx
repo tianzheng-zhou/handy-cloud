@@ -7,7 +7,7 @@ import {
   getSupportedLanguage,
   type SupportedLanguageCode,
 } from "../../i18n";
-import { useSettings } from "@/hooks/useSettings";
+import { useSetting, useSettingsActions } from "@/hooks/useSettings";
 
 interface AppLanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
@@ -17,9 +17,10 @@ interface AppLanguageSelectorProps {
 export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
   React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const { t, i18n } = useTranslation();
-    const { settings, updateSetting } = useSettings();
+    const value = useSetting("app_language");
+    const { updateSetting } = useSettingsActions();
 
-    const currentLanguage = (getSupportedLanguage(settings?.app_language) ||
+    const currentLanguage = (getSupportedLanguage(value) ||
       i18n.language) as SupportedLanguageCode;
 
     const languageOptions = SUPPORTED_LANGUAGES.map((lang) => ({
@@ -28,8 +29,9 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
     }));
 
     const handleLanguageChange = (langCode: string) => {
-      i18n.changeLanguage(langCode);
-      updateSetting("app_language", langCode);
+      void updateSetting("app_language", langCode)
+        .then(() => i18n.changeLanguage(langCode))
+        .catch(() => {});
     };
 
     return (

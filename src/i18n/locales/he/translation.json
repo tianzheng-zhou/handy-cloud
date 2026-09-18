@@ -3,15 +3,13 @@
     "settings": "הגדרות...",
     "checkUpdates": "בדוק עדכונים...",
     "copyLastTranscript": "העתק את התמלול האחרון",
-    "unloadModel": "פרוק מודל",
-    "model": "מודל",
     "quit": "יציאה",
     "cancel": "ביטול",
     "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"
   },
   "sidebar": {
     "general": "כללי",
-    "models": "מודלים",
+    "cloudAsr": "ASR",
     "advanced": "מתקדם",
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
@@ -19,85 +17,24 @@
     "about": "אודות"
   },
   "onboarding": {
-    "subtitle": "כדי להתחיל, בחר מודל תמלול",
-    "existingModelsTitle": "מודלים תואמים",
-    "downloadModelsTitle": "זמינים להורדה",
-    "showAllModels": "הצג את כל {{total}} המודלים",
-    "showFewerModels": "הצג פחות מודלים",
+    "cloudAsr": {
+      "subtitle": "Connect your Alibaba Bailian (DashScope) API key to transcribe speech in the cloud",
+      "apiKey": {
+        "title": "Bailian API Key",
+        "description": "Your DashScope API key is stored locally and used for cloud transcription.",
+        "placeholder": "sk-..."
+      },
+      "continue": "Continue",
+      "continueLoading": "Saving…",
+      "errors": {
+        "apiKeyRequired": "An API key is required to continue",
+        "setupFailed": "Failed to save your API key. Please try again."
+      }
+    },
     "recommended": "מומלץ",
-    "customModelDescription": "לא נתמך באופן רשמי",
     "modelCard": {
       "accuracy": "דיוק",
       "speed": "מהירות"
-    },
-    "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "מהיר ודי מדויק."
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": "דיוק טוב, מהירות בינונית"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "איזון טוב בין דיוק למהירות."
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": "דיוק טוב, אבל איטי."
-      },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "אנגלית בלבד. המודל הטוב ביותר לדוברי אנגלית."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "מהיר ומדויק"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "מהיר מאוד, אנגלית בלבד. מתמודד היטב עם מבטאים."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "מהיר במיוחד, אנגלית בלבד"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "מהיר, אנגלית בלבד. איזון טוב בין מהירות לדיוק."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "אנגלית בלבד. איכות גבוהה."
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "מותאם למנדרינית טאיוואנית. תמיכה במעבר בין שפות."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "מהיר מאוד. סינית, אנגלית, יפנית, קוריאנית וקנטונזית."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "זיהוי דיבור ברוסית. מהיר ומדויק."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "מהיר מאוד. אנגלית, גרמנית, ספרדית וצרפתית. תומך בתרגום."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "רב-לשוני ומדויק. 25 שפות אירופיות. תומך בתרגום."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
-      }
-    },
-    "errors": {
-      "selectModel": "בחירת המודל נכשלה"
     },
     "permissions": {
       "title": "נדרשות הרשאות",
@@ -121,42 +58,56 @@
     }
   },
   "modelSelector": {
-    "custom": "מותאם אישית",
-    "streaming": "סטרימינג",
-    "active": "פעיל",
-    "switching": "מחליף...",
-    "noModelsAvailable": "אין מודלים זמינים",
-    "verifying": "מאמת את {{modelName}}...",
-    "verifyingGeneric": "מאמת...",
-    "extracting": "מחלץ את {{modelName}}...",
-    "extractingMultiple": "מחלץ {{count}} מודלים...",
-    "extractingGeneric": "מחלץ...",
-    "downloading": "מוריד {{percentage}}%",
-    "downloadingMultiple": "מוריד {{count}} מודלים...",
-    "modelReady": "המודל מוכן",
-    "loading": "טוען את {{modelName}}...",
-    "loadingGeneric": "טוען...",
-    "modelError": "שגיאת מודל",
-    "modelUnloaded": "המודל נפרק",
-    "noModelDownloadRequired": "אין מודל, נדרשת הורדה",
-    "deleteModel": "מחק את {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "ביטול",
-    "cancelDownload": "בטל הורדה",
-    "capabilities": {
-      "languageSelection": "תומך בכמה שפות קלט",
-      "singleLanguage": "תומך רק בשפה הזו",
-      "languageCount": "{{total}} שפות",
-      "languageOnly": "{{language}} בלבד",
-      "translation": "יכול לתרגם לאנגלית",
-      "translate": "תרגם לאנגלית",
-      "streaming": "מציג תמלול חי תוך כדי דיבור"
-    },
-    "legacy": "מדור קודם"
+    "active": "פעיל"
+  },
+  "footer": {
+    "checkingUpdates": "בודק עדכונים...",
+    "updateAvailableShort": "יש עדכון זמין",
+    "upToDate": "מעודכן",
+    "updateCheckingDisabled": "בדיקת העדכונים כבויה",
+    "downloading": "מוריד... {{progress}}%",
+    "installing": "מתקין...",
+    "preparing": "מכין...",
+    "checkForUpdates": "בדוק עדכונים",
+    "portableUpdateTitle": "נדרש עדכון ידני",
+    "portableUpdateMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. כדי לעדכן, הורד את מתקין ה-NSIS האחרון מ-GitHub Releases, התקן לאותה תיקייה, ואז העתק את תיקיית Data/ (הגדרות, מודלים, הקלטות) מהגרסה הישנה לחדשה.",
+    "portableUpdateButton": "פתח את GitHub Releases"
   },
   "settings": {
+    "cloudAsr": {
+      "title": "Cloud ASR",
+      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen3.5-Omni.",
+      "groupTitle": "Connection",
+      "apiKey": {
+        "title": "API Key",
+        "description": "Your DashScope API key for cloud speech recognition.",
+        "placeholder": "sk-..."
+      },
+      "baseUrl": {
+        "title": "Base URL",
+        "description": "DashScope OpenAI-compatible endpoint. Change only if you use a custom gateway.",
+        "placeholder": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "model": {
+        "title": "Model",
+        "groupTitle": "Models",
+        "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
+        "placeholder": "Select a model…"
+      },
+      "models": {
+        "flash": {
+          "name": "Qwen3.5-Omni Flash",
+          "description": "Fast and cost-efficient. Best default for everyday dictation."
+        },
+        "plus": {
+          "name": "Qwen3.5-Omni Plus",
+          "description": "Higher accuracy for noisy audio and careful transcription. Slightly slower."
+        }
+      }
+    },
     "modelSettings": {
-      "title": "הגדרות עבור {{model}}"
+      "title": "הגדרות עבור {{model}}",
+      "cloudTitle": "Transcription"
     },
     "general": {
       "title": "כללי",
@@ -199,24 +150,6 @@
         "description": "החזק כדי להקליט, שחרר כדי לעצור"
       }
     },
-    "models": {
-      "title": "מודלי תמלול",
-      "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
-      "yourModels": "מודלים שהורדו",
-      "availableModels": "זמינים להורדה",
-      "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
-      "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
-      "deleteTitle": "מחיקת מודל",
-      "filters": {
-        "allLanguages": "כל השפות"
-      },
-      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
-      "searchPlaceholder": "חיפוש מודלים לפי שם…",
-      "rescan": {
-        "label": "סריקה מחדש",
-        "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy Cloud"
-      }
-    },
     "sound": {
       "title": "שמע",
       "microphone": {
@@ -256,19 +189,6 @@
         "label": "השאר את המיקרופון פתוח בין תמלולים",
         "description": "משאיר את זרם המיקרופון פתוח למשך 30 שניות אחרי סיום ההקלטה, וכך מפחית השהיה בתמלולים רצופים. עשוי לפגוע באיכות שמע Bluetooth בזמן שהאפשרות פעילה."
       },
-      "acceleration": {
-        "transcribe": {
-          "title": "האצת Whisper",
-          "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
-        },
-        "ort": {
-          "title": "האצת ONNX",
-          "description": "האצת חומרה למודלי ONNX (Parakeet, Canary, Moonshine ועוד). DirectML ב-Windows הוא ניסיוני. ייתכן שמודלים ייכשלו בתמלול."
-        },
-        "gpuDevice": {
-          "auto": "אוטומטי"
-        }
-      },
       "startHidden": {
         "label": "התחל מוסתר",
         "description": "הפעל לתוך מגש המערכת בלי לפתוח את החלון."
@@ -287,8 +207,7 @@
           "description": "בחר את שכבת-העל בהקלטה: 'ללא' מסתירה אותה, 'מינימלי' מציג סמן קומפקטי, 'בזמן אמת' מציג תמלול בזמן אמת בזמן הדיבור (מודלים התומכים בסטרימינג בלבד — חפש את התווית 'סטרימינג' בבורר המודלים). ב-Linux מומלץ לבחור 'ללא'.",
           "options": {
             "none": "ללא",
-            "minimal": "מינימלי",
-            "live": "בזמן אמת"
+            "minimal": "מינימלי"
           }
         },
         "position": {
@@ -343,20 +262,6 @@
         "label": "תרגם לאנגלית",
         "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול."
       },
-      "modelUnload": {
-        "title": "פרוק מודל",
-        "description": "שחרר אוטומטית זיכרון GPU/CPU כשהמודל לא היה בשימוש במשך הזמן שנבחר",
-        "options": {
-          "never": "אף פעם",
-          "immediately": "מיידית",
-          "min2": "אחרי 2 דקות",
-          "min5": "אחרי 5 דקות",
-          "min10": "אחרי 10 דקות",
-          "min15": "אחרי 15 דקות",
-          "hour1": "אחרי שעה",
-          "sec15": "אחרי 15 שניות (דיבאג)"
-        }
-      },
       "customWords": {
         "title": "מילים מותאמות אישית",
         "description": "עזרו למודלים נתמכים לזהות שמות ומונחים מקצועיים. תיקון בקירוב מוגבל כרגע למילים המשתמשות באותיות A–Z ובמספרים.",
@@ -368,6 +273,19 @@
       "voiceActivityDetection": {
         "title": "זיהוי פעילות קולית",
         "description": "סינון שקט מההקלטות. מודלים התומכים בסטרימינג משתמשים בזנב VAD ארוך יותר; ביטול VAD מקליט אודיו גולמי."
+      },
+      "screenContext": {
+        "label": "Use screen as context",
+        "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
+        "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
+        "method": {
+          "title": "Screen capture method",
+          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
+          "options": {
+            "screenshot": "Screenshot (may flash)",
+            "screencast": "ScreenCast (silent)"
+          }
+        }
       }
     },
     "postProcessing": {
@@ -464,6 +382,13 @@
         "label": "בדוק עדכונים",
         "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Handy Cloud"
       },
+      "whatsNewPreview": {
+        "title": "תצוגה מקדימה של מה חדש",
+        "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
+        "button": "תצוגה מקדימה",
+        "noNotes": "לא נמצאו הערות גרסה מצורפות",
+        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
+      },
       "soundTheme": {
         "label": "ערכת צלילים",
         "description": "בחר ערכת צלילים להתחלה ולסיום ההקלטה"
@@ -552,13 +477,6 @@
         "verdictOk": "אירועי מקשים מגיעים ל-Handy Cloud כרגיל.",
         "verdictNoEvents": "לא נקלטו אירועים — האם הקשת על מקשים במהלך הבדיקה?",
         "failed": "האבחון נכשל: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "תצוגה מקדימה של מה חדש",
-        "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
-        "button": "תצוגה מקדימה",
-        "noNotes": "לא נמצאו הערות גרסה מצורפות",
-        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
       }
     },
     "about": {
@@ -566,6 +484,10 @@
       "version": {
         "title": "גרסה",
         "description": "הגרסה הנוכחית של Handy Cloud"
+      },
+      "whatsNewUpdates": {
+        "label": "הצג מה חדש",
+        "description": "הצג הערות גרסה לאחר עדכוני Handy Cloud"
       },
       "appDataDirectory": {
         "title": "תיקיית נתוני אפליקציה",
@@ -583,35 +505,16 @@
       },
       "acknowledgments": {
         "title": "תודות",
-        "ggml": {
-          "title": "ggml",
-          "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
-          "details": "Handy Cloud משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
-        },
         "handy": {
           "title": "Handy / cjpais",
           "description": "Based on the original Handy project (MIT License).",
           "details": "Handy Cloud retains the original project’s copyright and contributor credits."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "הצג מה חדש",
-        "description": "הצג הערות גרסה לאחר עדכוני Handy Cloud"
       }
     }
   },
-  "footer": {
-    "checkingUpdates": "בודק עדכונים...",
-    "updateAvailableShort": "יש עדכון זמין",
-    "upToDate": "מעודכן",
-    "updateCheckingDisabled": "בדיקת העדכונים כבויה",
-    "downloading": "מוריד... {{progress}}%",
-    "installing": "מתקין...",
-    "preparing": "מכין...",
-    "checkForUpdates": "בדוק עדכונים",
-    "portableUpdateTitle": "נדרש עדכון ידני",
-    "portableUpdateMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. כדי לעדכן, הורד את מתקין ה-NSIS האחרון מ-GitHub Releases, התקן לאותה תיקייה, ואז העתק את תיקיית Data/ (הגדרות, מודלים, הקלטות) מהגרסה הישנה לחדשה.",
-    "portableUpdateButton": "פתח את GitHub Releases"
+  "whatsNew": {
+    "title": "חדש ב-Handy Cloud v{{version}}"
   },
   "common": {
     "loading": "טוען...",
@@ -620,7 +523,9 @@
     "open": "פתח",
     "copy": "העתק",
     "clear": "נקה",
-    "noOptionsFound": "לא נמצאו אפשרויות"
+    "noOptionsFound": "לא נמצאו אפשרויות",
+    "moreInformation": "More information",
+    "selectOption": "Select an option…"
   },
   "accessibility": {
     "permissionsDescription": "Handy Cloud צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
@@ -638,11 +543,11 @@
     "noInputDeviceTitle": "לא נמצא מיקרופון",
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
     "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
-    "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
-    "modelLoadFailedUnknown": "מודל לא ידוע",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
-    "transcriptionFailedTitle": "התמלול נכשל"
+    "transcriptionFailedTitle": "התמלול נכשל",
+    "recordingSaveFailed": "The audio could not be saved to history. Transcription will continue.",
+    "settingsSaveFailed": "Could not save settings. Please try again."
   },
   "appLanguage": {
     "title": "שפת האפליקציה",
@@ -660,9 +565,6 @@
   "overlay": {
     "transcribing": "מתמלל...",
     "processing": "מעבד..."
-  },
-  "whatsNew": {
-    "title": "חדש ב-Handy Cloud v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",

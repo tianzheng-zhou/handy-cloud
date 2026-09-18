@@ -1,5 +1,5 @@
 {
-  description = "Handy - A free, open source, and extensible speech-to-text application that works completely offline";
+  description = "Handy Cloud - desktop cloud speech to text";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -44,9 +44,6 @@
         libxtst
         gtk-layer-shell
         openssl
-        vulkan-loader
-        vulkan-headers
-        shaderc
       ];
 
       # GStreamer plugins for WebKitGTK audio/video
@@ -105,6 +102,12 @@
             };
 
             postPatch = ''
+              mkdir -p src-tauri/resources/models
+              cp ${pkgs.fetchurl {
+                url = "https://blob.handy.computer/silero_vad_v4.onnx";
+                hash = "sha256-o16/Uv085fFGmyo2FY26dhvEe5c+ozgrMYbKFbH1ryg=";
+              }} src-tauri/resources/models/silero_vad_v4.onnx
+
               ${pkgs.jq}/bin/jq '.bundle.createUpdaterArtifacts = false' \
                 src-tauri/tauri.conf.json > $TMPDIR/tauri.conf.json
               cp $TMPDIR/tauri.conf.json src-tauri/tauri.conf.json
@@ -149,11 +152,10 @@
               jq
               cmake
               rustPlatform.bindgenHook
-              shaderc
             ];
 
-            # Tests require runtime resources (audio devices, model files, GPU/Vulkan)
-            # not available in the Nix build sandbox
+            # Network socket tests need loopback access unavailable in the Nix sandbox.
+            # Run them separately with `cargo test` (see BUILD.md).
             doCheck = false;
 
             buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
@@ -173,8 +175,8 @@
             '';
 
             meta = {
-              description = "A free, open source, and extensible speech-to-text application that works completely offline";
-              homepage = "https://github.com/cjpais/Handy";
+              description = "Desktop speech to text using DashScope Qwen Omni";
+              homepage = "https://github.com/tianzheng-zhou/handy-cloud";
               license = lib.licenses.mit;
               mainProgram = "handy-cloud";
               platforms = supportedSystems;
@@ -232,13 +234,13 @@
               ORT_PREFER_DYNAMIC_LINK
               GST_PLUGIN_SYSTEM_PATH_1_0;
 
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.onnxruntime pkgs.vulkan-loader ]}";
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.onnxruntime ]}";
 
             # Same as wrapGAppsHook4
             XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
 
             shellHook = ''
-              echo "Handy development environment"
+              echo "Handy Cloud development environment"
               bun install
               echo "Run 'bun run tauri dev' to start"
             '';

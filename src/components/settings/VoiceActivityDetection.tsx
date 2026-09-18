@@ -1,7 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 
 interface VoiceActivityDetectionProps {
   descriptionMode?: "tooltip" | "inline";
@@ -13,14 +17,16 @@ export const VoiceActivityDetection: React.FC<VoiceActivityDetectionProps> = ({
   grouped = false,
 }) => {
   const { t } = useTranslation();
-  const { getSetting, updateSetting, isUpdating } = useSettings();
-  const enabled = getSetting("vad_enabled") ?? true;
+  const { updateSetting } = useSettingsActions();
+  const setting_vad_enabled = useSetting("vad_enabled");
+  const updating_vad_enabled = useSettingUpdating("vad_enabled");
+  const enabled = setting_vad_enabled ?? true;
 
   return (
     <ToggleSwitch
       checked={enabled}
       onChange={(enabled) => updateSetting("vad_enabled", enabled)}
-      isUpdating={isUpdating("vad_enabled")}
+      isUpdating={updating_vad_enabled}
       label={t("settings.advanced.voiceActivityDetection.title")}
       description={t("settings.advanced.voiceActivityDetection.description")}
       descriptionMode={descriptionMode}

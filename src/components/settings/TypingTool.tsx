@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import { commands } from "@/bindings";
 import type { TypingTool } from "@/bindings";
@@ -23,7 +27,10 @@ const allToolLabels: Record<string, string> = {
 export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_paste_method = useSetting("paste_method");
+    const setting_typing_tool = useSetting("typing_tool");
+    const updating_typing_tool = useSettingUpdating("typing_tool");
     const osType = useOsType();
     const [availableTools, setAvailableTools] = useState<string[] | null>(null);
 
@@ -43,7 +50,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
     }
 
     // Only show if paste method is "direct"
-    const pasteMethod = getSetting("paste_method");
+    const pasteMethod = setting_paste_method;
     if (pasteMethod !== "direct") {
       return null;
     }
@@ -58,7 +65,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
         : { value: tool, label: allToolLabels[tool] ?? tool },
     );
 
-    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
+    const selectedTool = (setting_typing_tool || "auto") as TypingTool;
 
     return (
       <SettingContainer
@@ -74,7 +81,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
           onSelect={(value) =>
             updateSetting("typing_tool", value as TypingTool)
           }
-          disabled={isUpdating("typing_tool")}
+          disabled={updating_typing_tool}
         />
       </SettingContainer>
     );

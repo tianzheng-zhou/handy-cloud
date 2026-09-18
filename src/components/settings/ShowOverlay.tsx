@@ -2,7 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import type { OverlayPosition, OverlayStyle } from "@/bindings";
 
 interface ShowOverlayProps {
@@ -13,7 +17,11 @@ interface ShowOverlayProps {
 export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_overlay_style = useSetting("overlay_style");
+    const setting_overlay_position = useSetting("overlay_position");
+    const updating_overlay_style = useSettingUpdating("overlay_style");
+    const updating_overlay_position = useSettingUpdating("overlay_position");
 
     const styleOptions = [
       {
@@ -37,11 +45,11 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
       },
     ];
 
-    const selectedStyle = getSetting("overlay_style") || "minimal";
+    const selectedStyle = setting_overlay_style || "minimal";
     // Only "top" and "bottom" are selectable; anything else (empty, or a legacy
     // "none" from before the position was retired) falls back to "bottom".
     const selectedPosition: OverlayPosition =
-      getSetting("overlay_position") === "top" ? "top" : "bottom";
+      setting_overlay_position === "top" ? "top" : "bottom";
 
     return (
       <>
@@ -57,7 +65,7 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
             onSelect={(value) =>
               updateSetting("overlay_style", value as OverlayStyle)
             }
-            disabled={isUpdating("overlay_style")}
+            disabled={updating_overlay_style}
           />
         </SettingContainer>
 
@@ -74,7 +82,7 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
               onSelect={(value) =>
                 updateSetting("overlay_position", value as OverlayPosition)
               }
-              disabled={isUpdating("overlay_position")}
+              disabled={updating_overlay_position}
             />
           </SettingContainer>
         )}

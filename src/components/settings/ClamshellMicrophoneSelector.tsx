@@ -54,12 +54,12 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
         ? "Default"
         : getSetting("clamshell_microphone") || "Default";
 
-    const handleClamshellMicrophoneSelect = async (deviceName: string) => {
-      await updateSetting("clamshell_microphone", deviceName);
+    const handleClamshellMicrophoneSelect = (deviceName: string) => {
+      return updateSetting("clamshell_microphone", deviceName);
     };
 
-    const handleReset = async () => {
-      await resetSetting("clamshell_microphone");
+    const handleReset = () => {
+      return resetSetting("clamshell_microphone");
     };
 
     const microphoneOptions = audioDevices.map((device) => ({

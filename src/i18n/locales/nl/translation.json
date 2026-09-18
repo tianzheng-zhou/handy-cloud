@@ -3,15 +3,13 @@
     "settings": "Instellingen...",
     "checkUpdates": "Controleren op updates...",
     "copyLastTranscript": "Laatste transcriptie kopiëren",
-    "unloadModel": "Model ontladen",
-    "model": "Model",
     "quit": "Afsluiten",
     "cancel": "Annuleren",
     "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input"
   },
   "sidebar": {
     "general": "Algemeen",
-    "models": "Modellen",
+    "cloudAsr": "ASR",
     "advanced": "Geavanceerd",
     "postProcessing": "Naverwerking",
     "history": "Geschiedenis",
@@ -19,85 +17,24 @@
     "about": "Over Handy Cloud"
   },
   "onboarding": {
-    "subtitle": "Kies een transcriptiemodel om aan de slag te gaan",
-    "existingModelsTitle": "Compatibele modellen",
-    "downloadModelsTitle": "Beschikbaar voor download",
-    "showAllModels": "Toon alle {{total}} modellen",
-    "showFewerModels": "Minder modellen tonen",
+    "cloudAsr": {
+      "subtitle": "Connect your Alibaba Bailian (DashScope) API key to transcribe speech in the cloud",
+      "apiKey": {
+        "title": "Bailian API Key",
+        "description": "Your DashScope API key is stored locally and used for cloud transcription.",
+        "placeholder": "sk-..."
+      },
+      "continue": "Continue",
+      "continueLoading": "Saving…",
+      "errors": {
+        "apiKeyRequired": "An API key is required to continue",
+        "setupFailed": "Failed to save your API key. Please try again."
+      }
+    },
     "recommended": "Aanbevolen",
-    "customModelDescription": "Niet officieel ondersteund",
     "modelCard": {
       "accuracy": "nauwkeurigheid",
       "speed": "snelheid"
-    },
-    "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "Snel en redelijk nauwkeurig."
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": "Goede nauwkeurigheid, gemiddelde snelheid."
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "Balans tussen nauwkeurigheid en snelheid."
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": "Hoge nauwkeurigheid, maar traag."
-      },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Alleen Engels. Het beste model voor Engelstaligen."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Snel en nauwkeurig."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Zeer snel, alleen Engels. Gaat goed om met accenten."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrasnel, alleen Engels."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Snel, alleen Engels. Goede balans tussen snelheid en nauwkeurigheid."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Alleen Engels. Hoge kwaliteit."
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "Geoptimaliseerd voor Taiwanees-Mandarijn. Ondersteunt codewisseling."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Zeer snel. Chinees, Engels, Japans, Koreaans, Kantonees."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russische spraakherkenning. Snel en nauwkeurig."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Zeer snel. Engels, Duits, Spaans, Frans. Ondersteunt vertaling."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Nauwkeurig meertalig. 25 Europese talen. Ondersteunt vertaling."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Een groot, trager, maar zeer nauwkeurig meertalig model."
-      }
-    },
-    "errors": {
-      "selectModel": "Model selecteren mislukt"
     },
     "permissions": {
       "title": "Machtigingen vereist",
@@ -121,42 +58,56 @@
     }
   },
   "modelSelector": {
-    "custom": "Aangepast",
-    "legacy": "Klassiek",
-    "streaming": "Streaming",
-    "active": "Actief",
-    "switching": "Wisselen...",
-    "noModelsAvailable": "Geen modellen beschikbaar",
-    "verifying": "Verifiëren van {{modelName}}...",
-    "verifyingGeneric": "Verifiëren...",
-    "extracting": "Uitpakken van {{modelName}}...",
-    "extractingMultiple": "Uitpakken van {{count}} modellen...",
-    "extractingGeneric": "Uitpakken...",
-    "downloading": "Downloaden {{percentage}}%",
-    "downloadingMultiple": "Downloaden van {{count}} modellen...",
-    "modelReady": "Model gereed",
-    "loading": "Laden van {{modelName}}...",
-    "loadingGeneric": "Laden...",
-    "modelError": "Modelfout",
-    "modelUnloaded": "Model ontladen",
-    "noModelDownloadRequired": "Geen model - Download vereist",
-    "deleteModel": "{{modelName}} verwijderen",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuleren",
-    "cancelDownload": "Download annuleren",
-    "capabilities": {
-      "languageSelection": "Ondersteunt meerdere invoertalen",
-      "singleLanguage": "Ondersteunt alleen deze taal",
-      "languageCount": "{{total}} talen",
-      "languageOnly": "Alleen {{language}}",
-      "translation": "Kan vertalen naar het Engels",
-      "translate": "Vertalen",
-      "streaming": "Toont live transcriptie tijdens het spreken"
-    }
+    "active": "Actief"
+  },
+  "footer": {
+    "checkingUpdates": "Controleren op updates...",
+    "updateAvailableShort": "Update beschikbaar",
+    "upToDate": "Up-to-date",
+    "updateCheckingDisabled": "Updatecontrole uitgeschakeld",
+    "downloading": "Downloaden... {{progress}}%",
+    "installing": "Installeren...",
+    "preparing": "Voorbereiden...",
+    "checkForUpdates": "Controleren op updates",
+    "portableUpdateTitle": "Handmatige update vereist",
+    "portableUpdateMessage": "Draagbare (portable) installaties kunnen niet automatisch worden bijgewerkt. Om bij te werken: download het nieuwste NSIS-installatiebestand van GitHub Releases, installeer het in dezelfde map en kopieer vervolgens je Data/-map (instellingen, modellen, opnames) van de oude versie naar de nieuwe.",
+    "portableUpdateButton": "GitHub Releases openen"
   },
   "settings": {
+    "cloudAsr": {
+      "title": "Cloud ASR",
+      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen3.5-Omni.",
+      "groupTitle": "Connection",
+      "apiKey": {
+        "title": "API Key",
+        "description": "Your DashScope API key for cloud speech recognition.",
+        "placeholder": "sk-..."
+      },
+      "baseUrl": {
+        "title": "Base URL",
+        "description": "DashScope OpenAI-compatible endpoint. Change only if you use a custom gateway.",
+        "placeholder": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "model": {
+        "title": "Model",
+        "groupTitle": "Models",
+        "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
+        "placeholder": "Select a model…"
+      },
+      "models": {
+        "flash": {
+          "name": "Qwen3.5-Omni Flash",
+          "description": "Fast and cost-efficient. Best default for everyday dictation."
+        },
+        "plus": {
+          "name": "Qwen3.5-Omni Plus",
+          "description": "Higher accuracy for noisy audio and careful transcription. Slightly slower."
+        }
+      }
+    },
     "modelSettings": {
-      "title": "Instellingen voor {{model}}"
+      "title": "Instellingen voor {{model}}",
+      "cloudTitle": "Transcription"
     },
     "general": {
       "title": "Algemeen",
@@ -199,24 +150,6 @@
         "description": "Ingedrukt houden om op te nemen, loslaten om te stoppen"
       }
     },
-    "models": {
-      "title": "Transcriptiemodellen",
-      "description": "Selecteer een transcriptiemodel of download extra modellen. Verschillende modellen bieden variërende niveaus van nauwkeurigheid en snelheid.",
-      "searchPlaceholder": "Modellen zoeken op naam...",
-      "yourModels": "Gedownloade modellen",
-      "availableModels": "Beschikbaar voor download",
-      "deleteConfirm": "Weet je zeker dat je {{modelName}} wilt verwijderen? Je moet het model opnieuw downloaden om het weer te gebruiken.",
-      "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
-      "deleteTitle": "Model verwijderen",
-      "filters": {
-        "allLanguages": "Alle talen"
-      },
-      "rescan": {
-        "label": "Opnieuw scannen",
-        "tooltip": "Scannen naar modellen die buiten Handy Cloud om zijn toegevoegd aan de modellenmap of Hugging Face-cache"
-      },
-      "noModelsMatch": "Geen modellen voldoen aan dit filter."
-    },
     "sound": {
       "title": "Geluid",
       "microphone": {
@@ -256,19 +189,6 @@
         "label": "Microfoon openhouden tussen transcripties",
         "description": "Houdt de microfoonstream tot 30 seconden open nadat een opname stopt. Dit vermindert de vertraging bij opeenvolgende opnames, maar kan de Bluetooth-audiokwaliteit tijdelijk verminderen."
       },
-      "acceleration": {
-        "transcribe": {
-          "title": "transcribe.cpp-versnelling",
-          "description": "Hardwareversnelling voor transcribe.cpp-modellen (Whisper-familie). 'Automatisch' gebruikt de GPU indien beschikbaar (Metal op macOS, Vulkan op Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-versnelling",
-          "description": "Hardwareversnelling voor ONNX-modellen (Parakeet, Canary, Moonshine, etc.). DirectML op Windows is experimenteel; modellen kunnen daardoor haperen."
-        },
-        "gpuDevice": {
-          "auto": "Automatisch"
-        }
-      },
       "startHidden": {
         "label": "Geminimaliseerd opstarten",
         "description": "Start op de achtergrond in het systeemvak zonder het hoofdvenster te openen."
@@ -287,8 +207,7 @@
           "description": "Kies de opname-overlay: 'Geen' verbergt deze, 'Minimaal' toont een compacte balk, 'Live' toont de tekst in realtime tijdens het spreken (alleen voor streaming-modellen). Op Linux wordt 'Geen' aanbevolen.",
           "options": {
             "none": "Geen",
-            "minimal": "Minimaal",
-            "live": "Live"
+            "minimal": "Minimaal"
           }
         },
         "position": {
@@ -343,20 +262,6 @@
         "label": "Vertalen naar het Engels",
         "description": "Vertaal spraak uit andere talen tijdens het transcriberen automatisch naar het Engels."
       },
-      "modelUnload": {
-        "title": "Model ontladen",
-        "description": "Geheugen (GPU/CPU) automatisch vrijmaken wanneer het model voor de opgegeven tijd niet is gebruikt",
-        "options": {
-          "never": "Nooit",
-          "immediately": "Direct",
-          "min2": "Na 2 minuten",
-          "min5": "Na 5 minuten",
-          "min10": "Na 10 minuten",
-          "min15": "Na 15 minuten",
-          "hour1": "Na 1 uur",
-          "sec15": "Na 15 seconden (Debug)"
-        }
-      },
       "customWords": {
         "title": "Eigen woordenlijst",
         "description": "Help ondersteunde modellen namen en vaktermen te herkennen. Fuzzy-correctie is momenteel beperkt tot woorden met de letters A–Z en cijfers.",
@@ -368,6 +273,19 @@
       "voiceActivityDetection": {
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."
+      },
+      "screenContext": {
+        "label": "Use screen as context",
+        "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
+        "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
+        "method": {
+          "title": "Screen capture method",
+          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
+          "options": {
+            "screenshot": "Screenshot (may flash)",
+            "screencast": "ScreenCast (silent)"
+          }
+        }
       }
     },
     "postProcessing": {
@@ -587,11 +505,6 @@
       },
       "acknowledgments": {
         "title": "Dankbetuigingen",
-        "ggml": {
-          "title": "ggml",
-          "description": "Krachtige tensorbibliotheek voor lokale AI-verwerking",
-          "details": "Handy Cloud's lokale spraak-naar-tekst is gebouwd op transcribe.cpp en ggml. Met dank aan het geweldige werk van Georgi Gerganov en alle bijdragers."
-        },
         "handy": {
           "title": "Handy / cjpais",
           "description": "Based on the original Handy project (MIT License).",
@@ -599,19 +512,6 @@
         }
       }
     }
-  },
-  "footer": {
-    "checkingUpdates": "Controleren op updates...",
-    "updateAvailableShort": "Update beschikbaar",
-    "upToDate": "Up-to-date",
-    "updateCheckingDisabled": "Updatecontrole uitgeschakeld",
-    "downloading": "Downloaden... {{progress}}%",
-    "installing": "Installeren...",
-    "preparing": "Voorbereiden...",
-    "checkForUpdates": "Controleren op updates",
-    "portableUpdateTitle": "Handmatige update vereist",
-    "portableUpdateMessage": "Draagbare (portable) installaties kunnen niet automatisch worden bijgewerkt. Om bij te werken: download het nieuwste NSIS-installatiebestand van GitHub Releases, installeer het in dezelfde map en kopieer vervolgens je Data/-map (instellingen, modellen, opnames) van de oude versie naar de nieuwe.",
-    "portableUpdateButton": "GitHub Releases openen"
   },
   "whatsNew": {
     "title": "Nieuw in Handy Cloud v{{version}}"
@@ -623,7 +523,9 @@
     "open": "Openen",
     "copy": "Kopiëren",
     "clear": "Wissen",
-    "noOptionsFound": "Geen opties gevonden"
+    "noOptionsFound": "Geen opties gevonden",
+    "moreInformation": "More information",
+    "selectOption": "Select an option…"
   },
   "accessibility": {
     "permissionsDescription": "Handy Cloud heeft toegankelijkheidsmachtigingen nodig om getranscribeerde tekst te kunnen typen.",
@@ -641,11 +543,11 @@
     "noInputDeviceTitle": "Geen microfoon gevonden",
     "noInputDevice": "Er is geen audio-invoerapparaat gedetecteerd. Sluit een microfoon of headset aan en probeer het opnieuw.",
     "recordingFailed": "Opname starten mislukt: {{error}}",
-    "modelLoadFailed": "Model laden mislukt: {{model}}",
-    "modelLoadFailedUnknown": "onbekend model",
     "pasteFailedTitle": "Tekst plakken mislukt",
     "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
-    "transcriptionFailedTitle": "Transcriptie mislukt"
+    "transcriptionFailedTitle": "Transcriptie mislukt",
+    "recordingSaveFailed": "The audio could not be saved to history. Transcription will continue.",
+    "settingsSaveFailed": "Could not save settings. Please try again."
   },
   "appLanguage": {
     "title": "Interfacetaal",

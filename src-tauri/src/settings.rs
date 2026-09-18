@@ -1523,7 +1523,9 @@ mod tests {
             .post_process_api_keys
             .insert("empty_provider".to_string(), "".to_string());
 
+        settings.cloud_asr_api_key = "sk-cloud-secret".into();
         let debug_output = format!("{:?}", settings);
+        assert!(!debug_output.contains("sk-cloud-secret"));
 
         assert!(!debug_output.contains("sk-proj-secret-key-12345"));
         assert!(!debug_output.contains("sk-ant-secret-key-67890"));

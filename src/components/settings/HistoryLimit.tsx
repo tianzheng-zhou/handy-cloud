@@ -1,6 +1,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import { Input } from "../ui/Input";
 import { SettingContainer } from "../ui/SettingContainer";
 
@@ -14,9 +18,11 @@ export const HistoryLimit: React.FC<HistoryLimitProps> = ({
   grouped = false,
 }) => {
   const { t } = useTranslation();
-  const { getSetting, updateSetting, isUpdating } = useSettings();
+  const { updateSetting } = useSettingsActions();
+  const setting_history_limit = useSetting("history_limit");
+  const updating_history_limit = useSettingUpdating("history_limit");
 
-  const historyLimit = getSetting("history_limit") ?? 5;
+  const historyLimit = setting_history_limit ?? 5;
 
   const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10);
@@ -40,7 +46,7 @@ export const HistoryLimit: React.FC<HistoryLimitProps> = ({
           max="1000"
           value={historyLimit}
           onChange={handleChange}
-          disabled={isUpdating("history_limit")}
+          disabled={updating_history_limit}
           className="w-20"
         />
         <span className="text-sm text-text">

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SettingContainer, SettingsGroup } from "@/components/ui";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
+import { useSetting, useSettingUpdating } from "@/hooks/useSettings";
 import { useSettingsStore } from "@/stores/settingsStore";
 import {
   CloudAsrModelCard,
@@ -31,9 +32,12 @@ const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
 
 export const CloudAsrSettings: React.FC = () => {
   const { t } = useTranslation();
-  const settings = useSettingsStore((state) => state.settings);
-  const updating = useSettingsStore((state) => state.isUpdating);
-  const isUpdatingKey = (key: string) => !!updating[key];
+  const apiKey = useSetting("cloud_asr_api_key") ?? "";
+  const baseUrl = useSetting("cloud_asr_base_url") ?? "";
+  const currentModel = useSetting("cloud_asr_model") ?? "";
+  const savingKey = useSettingUpdating("cloud_asr_api_key");
+  const savingUrl = useSettingUpdating("cloud_asr_base_url");
+  const selectingModel = useSettingUpdating("cloud_asr_model");
   const updateCloudAsrApiKey = useSettingsStore(
     (state) => state.updateCloudAsrApiKey,
   );
@@ -43,9 +47,6 @@ export const CloudAsrSettings: React.FC = () => {
   const updateCloudAsrModel = useSettingsStore(
     (state) => state.updateCloudAsrModel,
   );
-
-  const currentModel = settings?.cloud_asr_model ?? "";
-  const selectingModel = isUpdatingKey("cloud_asr_model");
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 px-3 sm:px-4 box-border">
@@ -83,10 +84,10 @@ export const CloudAsrSettings: React.FC = () => {
           grouped={true}
         >
           <ApiKeyField
-            value={settings?.cloud_asr_api_key ?? ""}
+            value={apiKey}
             onBlur={updateCloudAsrApiKey}
             placeholder={t("settings.cloudAsr.apiKey.placeholder")}
-            disabled={isUpdatingKey("cloud_asr_api_key")}
+            disabled={savingKey}
             className="w-full min-w-0"
           />
         </SettingContainer>
@@ -99,10 +100,10 @@ export const CloudAsrSettings: React.FC = () => {
           grouped={true}
         >
           <BaseUrlField
-            value={settings?.cloud_asr_base_url ?? ""}
+            value={baseUrl}
             onBlur={updateCloudAsrBaseUrl}
             placeholder={t("settings.cloudAsr.baseUrl.placeholder")}
-            disabled={isUpdatingKey("cloud_asr_base_url")}
+            disabled={savingUrl}
             className="w-full min-w-0"
           />
         </SettingContainer>

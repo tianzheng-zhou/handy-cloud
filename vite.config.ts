@@ -19,6 +19,7 @@ export default defineConfig(async () => ({
 
   // Multiple entry points for main app and overlay
   build: {
+    manifest: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),

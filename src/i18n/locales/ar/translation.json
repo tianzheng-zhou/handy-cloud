@@ -3,101 +3,38 @@
     "settings": "...الإعدادات",
     "checkUpdates": "...التحقق من وجود تحديثات",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
-    "unloadModel": "تفريغ النموذج",
-    "model": "النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء",
     "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input"
   },
   "sidebar": {
     "general": "عام",
+    "cloudAsr": "ASR",
     "advanced": "متقدم",
     "postProcessing": "معالجة لاحقة",
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
-    "about": "حول",
-    "models": "النماذج"
+    "about": "حول"
   },
   "onboarding": {
-    "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
-    "existingModelsTitle": "النماذج المتوافقة",
-    "downloadModelsTitle": "متاح للتنزيل",
-    "showAllModels": "عرض كل النماذج ({{total}})",
-    "showFewerModels": "عرض عدد أقل من النماذج",
+    "cloudAsr": {
+      "subtitle": "Connect your Alibaba Bailian (DashScope) API key to transcribe speech in the cloud",
+      "apiKey": {
+        "title": "Bailian API Key",
+        "description": "Your DashScope API key is stored locally and used for cloud transcription.",
+        "placeholder": "sk-..."
+      },
+      "continue": "Continue",
+      "continueLoading": "Saving…",
+      "errors": {
+        "apiKeyRequired": "An API key is required to continue",
+        "setupFailed": "Failed to save your API key. Please try again."
+      }
+    },
     "recommended": "موصى به",
-    "customModelDescription": "غير مدعوم رسميًا",
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"
-    },
-    "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": ".سريع ودقيق إلى حد ما"
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": ".دقة جيدة، سرعة متوسطة"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": ".توازن بين الدقة والسرعة"
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": ".دقة جيدة، لكنه بطيء"
-      },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": ".الإنجليزية فقط. أفضل نموذج للمتحدثين بالإنجليزية"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": ".سريع ودقيق"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": ".سريع جداً، الإنجليزية فقط. يتعامل جيداً مع اللهجات"
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "سريع للغاية، الإنجليزية فقط"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "سريع، الإنجليزية فقط. توازن جيد بين السرعة والدقة."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "الإنجليزية فقط. جودة عالية."
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "محسّن للماندرين التايوانية. دعم التبديل بين اللغات."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "التعرف على الكلام الروسي. سريع ودقيق."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "سريع جداً. الإنجليزية، الألمانية، الإسبانية، الفرنسية. يدعم الترجمة."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "متعدد اللغات ودقيق. 25 لغة أوروبية. يدعم الترجمة."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "نموذج كبير وأبطأ، لكنه دقيق جداً ومتعدد اللغات."
-      }
-    },
-    "errors": {
-      "selectModel": "فشل تحديد النموذج"
     },
     "permissions": {
       "title": "الأذونات المطلوبة",
@@ -121,40 +58,57 @@
     }
   },
   "modelSelector": {
-    "custom": "مخصص",
-    "streaming": "البث",
-    "active": "نشط",
-    "noModelsAvailable": "لا توجد نماذج متاحة",
-    "verifying": "جارٍ التحقق من {{modelName}}...",
-    "verifyingGeneric": "جارٍ التحقق...",
-    "extracting": "...جاري استخراج {{modelName}}",
-    "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
-    "extractingGeneric": "...جاري الاستخراج",
-    "downloading": "جاري التنزيل {{percentage}}%",
-    "downloadingMultiple": "جاري تنزيل {{count}} من النماذج...",
-    "modelReady": "النموذج جاهز",
-    "loading": "...جاري تحميل {{modelName}}",
-    "loadingGeneric": "...جاري التحميل",
-    "modelError": "خطأ في النموذج",
-    "modelUnloaded": "تم إلغاء تحميل النموذج",
-    "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
-    "deleteModel": "حذف {{modelName}}",
-    "switching": "جارٍ التبديل...",
-    "downloadSpeed": "{{speed}} ميجابايت/ث",
-    "cancel": "إلغاء",
-    "cancelDownload": "إلغاء التنزيل",
-    "capabilities": {
-      "languageSelection": "يدعم اختيار اللغة",
-      "singleLanguage": "يدعم هذه اللغة فقط",
-      "languageCount": "{{total}} لغة",
-      "languageOnly": "{{language}} فقط",
-      "translation": "يدعم الترجمة",
-      "translate": "ترجمة",
-      "streaming": "يعرض النسخ المباشر أثناء التحدث"
-    },
-    "legacy": "قديم"
+    "active": "نشط"
+  },
+  "footer": {
+    "checkingUpdates": "...جاري التحقق من وجود تحديثات",
+    "updateAvailableShort": "تحديث متاح",
+    "upToDate": "محدث",
+    "updateCheckingDisabled": "تم تعطيل التحقق من التحديث",
+    "downloading": "...جاري التنزيل {{progress}}%",
+    "installing": "...جاري التثبيت",
+    "preparing": "...جاري التحضير",
+    "checkForUpdates": "التحقق من وجود تحديثات",
+    "portableUpdateTitle": "التحديث اليدوي مطلوب",
+    "portableUpdateMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. للتحديث: نزّل أحدث مثبّت NSIS من GitHub Releases، وثبّته في المجلد نفسه، ثم انسخ مجلد Data/ (الإعدادات والنماذج والتسجيلات) من الإصدار القديم إلى الجديد.",
+    "portableUpdateButton": "فتح GitHub Releases"
   },
   "settings": {
+    "cloudAsr": {
+      "title": "Cloud ASR",
+      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen3.5-Omni.",
+      "groupTitle": "Connection",
+      "apiKey": {
+        "title": "API Key",
+        "description": "Your DashScope API key for cloud speech recognition.",
+        "placeholder": "sk-..."
+      },
+      "baseUrl": {
+        "title": "Base URL",
+        "description": "DashScope OpenAI-compatible endpoint. Change only if you use a custom gateway.",
+        "placeholder": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "model": {
+        "title": "Model",
+        "groupTitle": "Models",
+        "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
+        "placeholder": "Select a model…"
+      },
+      "models": {
+        "flash": {
+          "name": "Qwen3.5-Omni Flash",
+          "description": "Fast and cost-efficient. Best default for everyday dictation."
+        },
+        "plus": {
+          "name": "Qwen3.5-Omni Plus",
+          "description": "Higher accuracy for noisy audio and careful transcription. Slightly slower."
+        }
+      }
+    },
+    "modelSettings": {
+      "title": "إعدادات {{model}}",
+      "cloudTitle": "Transcription"
+    },
     "general": {
       "title": "عام",
       "shortcut": {
@@ -235,19 +189,6 @@
         "label": "إبقاء الميكروفون مفتوحًا بين عمليات النسخ",
         "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
       },
-      "acceleration": {
-        "transcribe": {
-          "title": "تسريع Whisper",
-          "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
-        },
-        "ort": {
-          "title": "تسريع ONNX",
-          "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
-        },
-        "gpuDevice": {
-          "auto": "تلقائي"
-        }
-      },
       "startHidden": {
         "label": "بدء مخفي",
         "description": ".التشغيل في صينية النظام دون فتح النافذة"
@@ -266,8 +207,7 @@
           "description": "اختر تراكب التسجيل: «بلا» يخفيه، و«مبسط» يعرض شارة صغيرة، و«مباشر» يعرض النص المكتوب فوريًا أثناء التحدث (النماذج التي تدعم البث فقط — ابحث عن شارة «البث» في منتقي النماذج). على Linux يُنصح باختيار «بلا».",
           "options": {
             "none": "بلا",
-            "minimal": "مبسط",
-            "live": "مباشر"
+            "minimal": "مبسط"
           }
         },
         "position": {
@@ -322,20 +262,6 @@
         "label": "الترجمة إلى الإنجليزية",
         "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ"
       },
-      "modelUnload": {
-        "title": "إلغاء تحميل النموذج",
-        "description": "تحرير ذاكرة GPU/CPU تلقائياً عندما لا يتم استخدام النموذج للوقت المحدد",
-        "options": {
-          "never": "أبداً",
-          "immediately": "فوراً",
-          "min2": "بعد دقيقتين",
-          "min5": "بعد 5 دقائق",
-          "min10": "بعد 10 دقائق",
-          "min15": "بعد 15 دقيقة",
-          "hour1": "بعد ساعة واحدة",
-          "sec15": "بعد 15 ثوانٍ (تصحيح أخطاء)"
-        }
-      },
       "customWords": {
         "title": "كلمات مخصصة",
         "description": "ساعد النماذج المدعومة على التعرّف على الأسماء والمصطلحات المتخصصة. يقتصر التصحيح التقريبي حاليًا على الكلمات التي تستخدم الأحرف A–Z والأرقام.",
@@ -347,6 +273,19 @@
       "voiceActivityDetection": {
         "title": "كشف النشاط الصوتي",
         "description": "تصفية الصمت من التسجيلات. النماذج التي تدعم البث تستخدم فترة VAD أطول؛ وتعطيل VAD يسجّل الصوت الخام."
+      },
+      "screenContext": {
+        "label": "Use screen as context",
+        "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
+        "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
+        "method": {
+          "title": "Screen capture method",
+          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
+          "options": {
+            "screenshot": "Screenshot (may flash)",
+            "screencast": "ScreenCast (silent)"
+          }
+        }
       }
     },
     "postProcessing": {
@@ -443,6 +382,13 @@
         "label": "التحقق من وجود تحديثات",
         "description": "التحقق تلقائياً من وجود إصدارات جديدة من Handy Cloud"
       },
+      "whatsNewPreview": {
+        "title": "معاينة الجديد",
+        "description": "افتح أحدث ملاحظات إصدار مضمنة دون وضع علامة عليها كمقروءة",
+        "button": "معاينة",
+        "noNotes": "لم يتم العثور على ملاحظات إصدار مضمنة",
+        "error": "تعذرت معاينة ملاحظات الإصدار"
+      },
       "soundTheme": {
         "label": "سمة الصوت",
         "description": "اختر سمة صوت لتنبيهات بدء وتوقف التسجيل"
@@ -531,13 +477,6 @@
         "verdictOk": "أحداث المفاتيح تصل إلى Handy Cloud بشكل طبيعي.",
         "verdictNoEvents": "لم يُسجَّل أي حدث — هل ضغطت أي مفاتيح أثناء الاختبار؟",
         "failed": "فشل التشخيص: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "معاينة الجديد",
-        "description": "افتح أحدث ملاحظات إصدار مضمنة دون وضع علامة عليها كمقروءة",
-        "button": "معاينة",
-        "noNotes": "لم يتم العثور على ملاحظات إصدار مضمنة",
-        "error": "تعذرت معاينة ملاحظات الإصدار"
       }
     },
     "about": {
@@ -545,6 +484,10 @@
       "version": {
         "title": "الإصدار",
         "description": "الإصدار الحالي من Handy Cloud"
+      },
+      "whatsNewUpdates": {
+        "label": "إظهار الجديد",
+        "description": "إظهار ملاحظات الإصدار بعد تحديثات Handy Cloud"
       },
       "appDataDirectory": {
         "title": "مجلد بيانات التطبيق",
@@ -562,56 +505,16 @@
       },
       "acknowledgments": {
         "title": "شكر وتقدير",
-        "ggml": {
-          "title": "ggml",
-          "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
-          "details": ".يستخدم Handy Cloud برنامج ggml لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
-        },
         "handy": {
           "title": "Handy / cjpais",
           "description": "Based on the original Handy project (MIT License).",
           "details": "Handy Cloud retains the original project’s copyright and contributor credits."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "إظهار الجديد",
-        "description": "إظهار ملاحظات الإصدار بعد تحديثات Handy Cloud"
-      }
-    },
-    "modelSettings": {
-      "title": "إعدادات {{model}}"
-    },
-    "models": {
-      "title": "نماذج النسخ",
-      "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
-      "yourModels": "النماذج المحمّلة",
-      "availableModels": "متاح للتنزيل",
-      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
-      "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
-      "deleteTitle": "حذف النموذج",
-      "filters": {
-        "allLanguages": "جميع اللغات"
-      },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
-      "searchPlaceholder": "ابحث عن النماذج بالاسم…",
-      "rescan": {
-        "label": "إعادة الفحص",
-        "tooltip": "إعادة الفحص بحثًا عن النماذج المضافة إلى مجلد النماذج أو ذاكرة Hugging Face التخزينية المؤقتة خارج Handy Cloud"
       }
     }
   },
-  "footer": {
-    "checkingUpdates": "...جاري التحقق من وجود تحديثات",
-    "updateAvailableShort": "تحديث متاح",
-    "upToDate": "محدث",
-    "updateCheckingDisabled": "تم تعطيل التحقق من التحديث",
-    "downloading": "...جاري التنزيل {{progress}}%",
-    "installing": "...جاري التثبيت",
-    "preparing": "...جاري التحضير",
-    "checkForUpdates": "التحقق من وجود تحديثات",
-    "portableUpdateTitle": "التحديث اليدوي مطلوب",
-    "portableUpdateMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. للتحديث: نزّل أحدث مثبّت NSIS من GitHub Releases، وثبّته في المجلد نفسه، ثم انسخ مجلد Data/ (الإعدادات والنماذج والتسجيلات) من الإصدار القديم إلى الجديد.",
-    "portableUpdateButton": "فتح GitHub Releases"
+  "whatsNew": {
+    "title": "الجديد في Handy Cloud v{{version}}"
   },
   "common": {
     "loading": "...جاري التحميل",
@@ -620,7 +523,9 @@
     "open": "فتح",
     "copy": "نسخ",
     "clear": "مسح",
-    "noOptionsFound": "لم يتم العثور على خيارات"
+    "noOptionsFound": "لم يتم العثور على خيارات",
+    "moreInformation": "More information",
+    "selectOption": "Select an option…"
   },
   "accessibility": {
     "permissionsDescription": ".يحتاج Handy Cloud إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
@@ -638,11 +543,11 @@
     "noInputDeviceTitle": "لم يتم العثور على ميكروفون",
     "noInputDevice": "لم يتم اكتشاف أي جهاز إدخال صوتي. يرجى توصيل ميكروفون أو سماعة رأس والمحاولة مرة أخرى.",
     "recordingFailed": "فشل في بدء التسجيل: {{error}}",
-    "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
-    "modelLoadFailedUnknown": "نموذج غير معروف",
     "pasteFailedTitle": "فشل لصق النص",
     "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
-    "transcriptionFailedTitle": "فشل التفريغ النصي"
+    "transcriptionFailedTitle": "فشل التفريغ النصي",
+    "recordingSaveFailed": "The audio could not be saved to history. Transcription will continue.",
+    "settingsSaveFailed": "Could not save settings. Please try again."
   },
   "appLanguage": {
     "title": "لغة التطبيق",
@@ -660,9 +565,6 @@
   "overlay": {
     "transcribing": "...جاري التفريغ",
     "processing": "...جاري المعالجة"
-  },
-  "whatsNew": {
-    "title": "الجديد في Handy Cloud v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "قد يحظر {{name}} اختصارًا واحدًا",

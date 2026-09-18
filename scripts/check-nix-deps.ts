@@ -50,14 +50,23 @@ const storedHash = existsSync(hashFile)
   : "";
 
 // If hashes match, bun.nix is up to date — nothing to do
-if (currentHash === storedHash) process.exit(0);
+if (process.argv.includes("--check")) {
+  if (currentHash !== storedHash || !existsSync(nixFile)) {
+    console.error(
+      "Nix dependencies are stale: run bun scripts/check-nix-deps.ts",
+    );
+    process.exit(1);
+  }
+  process.exit(0);
+}
+if (currentHash === storedHash && existsSync(nixFile)) process.exit(0);
 
 // bun.lock has changed — regenerate the Nix dependency file
 console.log(
   `[check-nix-deps] bun.lock has changed, regenerating ${nixFile}...`,
 );
 
-const result = Bun.spawnSync(["bunx", "bun2nix", "-o", nixFile], {
+const result = Bun.spawnSync(["bunx", "bun2nix@2.0.8", "-o", nixFile], {
   cwd: root,
   stdio: ["inherit", "inherit", "inherit"],
 });

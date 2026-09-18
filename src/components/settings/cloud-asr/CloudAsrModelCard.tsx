@@ -38,8 +38,11 @@ export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
 
   return (
     <div
-      role={clickable ? "button" : undefined}
-      tabIndex={clickable ? 0 : undefined}
+      role="button"
+      aria-label={t(model.nameKey)}
+      aria-pressed={active}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
       onClick={handleActivate}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

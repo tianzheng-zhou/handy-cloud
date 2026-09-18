@@ -2,7 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import type { ClipboardHandling } from "@/bindings";
 
 interface ClipboardHandlingProps {
@@ -13,7 +17,10 @@ interface ClipboardHandlingProps {
 export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
   React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_clipboard_handling = useSetting("clipboard_handling");
+    const updating_clipboard_handling =
+      useSettingUpdating("clipboard_handling");
 
     const clipboardHandlingOptions = [
       {
@@ -26,7 +33,7 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
       },
     ];
 
-    const selectedHandling = (getSetting("clipboard_handling") ||
+    const selectedHandling = (setting_clipboard_handling ||
       "dont_modify") as ClipboardHandling;
 
     return (
@@ -42,7 +49,7 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
           onSelect={(value) =>
             updateSetting("clipboard_handling", value as ClipboardHandling)
           }
-          disabled={isUpdating("clipboard_handling")}
+          disabled={updating_clipboard_handling}
         />
       </SettingContainer>
     );

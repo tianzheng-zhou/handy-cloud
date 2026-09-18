@@ -1,18 +1,45 @@
-import React from "react";
+import React, { lazy } from "react";
+import type { AppSettings } from "@/bindings";
 import { useTranslation } from "react-i18next";
 import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
-import { useSettings } from "../hooks/useSettings";
-import {
-  GeneralSettings,
-  AdvancedSettings,
-  HistorySettings,
-  DebugSettings,
-  AboutSettings,
-  PostProcessingSettings,
-  CloudAsrSettings,
-} from "./settings";
+import { useSetting } from "../hooks/useSettings";
+const GeneralSettings = lazy(() =>
+  import("./settings/general/GeneralSettings").then((module) => ({
+    default: module.GeneralSettings,
+  })),
+);
+const AdvancedSettings = lazy(() =>
+  import("./settings/advanced/AdvancedSettings").then((module) => ({
+    default: module.AdvancedSettings,
+  })),
+);
+const HistorySettings = lazy(() =>
+  import("./settings/history/HistorySettings").then((module) => ({
+    default: module.HistorySettings,
+  })),
+);
+const DebugSettings = lazy(() =>
+  import("./settings/debug/DebugSettings").then((module) => ({
+    default: module.DebugSettings,
+  })),
+);
+const AboutSettings = lazy(() =>
+  import("./settings/about/AboutSettings").then((module) => ({
+    default: module.AboutSettings,
+  })),
+);
+const PostProcessingSettings = lazy(() =>
+  import("./settings/post-processing/PostProcessingSettings").then(
+    (module) => ({ default: module.PostProcessingSettings }),
+  ),
+);
+const CloudAsrSettings = lazy(() =>
+  import("./settings/cloud-asr/CloudAsrSettings").then((module) => ({
+    default: module.CloudAsrSettings,
+  })),
+);
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 
@@ -21,14 +48,13 @@ interface IconProps {
   height?: number | string;
   size?: number | string;
   className?: string;
-  [key: string]: any;
 }
 
 interface SectionConfig {
   labelKey: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
-  enabled: (settings: any) => boolean;
+  enabled: (settings: AppSettings | null) => boolean;
 }
 
 export const SECTIONS_CONFIG = {
@@ -86,7 +112,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSectionChange,
 }) => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const settings: AppSettings = {
+    debug_mode: useSetting("debug_mode"),
+    post_process_enabled: useSetting("post_process_enabled"),
+  };
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
@@ -101,7 +130,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           const isActive = activeSection === section.id;
 
           return (
-            <div
+            <button
+              type="button"
+              aria-current={isActive ? "page" : undefined}
               key={section.id}
               className={`flex gap-2 items-center p-2 w-full min-w-0 rounded-lg cursor-pointer transition-colors ${
                 isActive
@@ -117,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 {t(section.labelKey)}
               </p>
-            </div>
+            </button>
           );
         })}
       </div>

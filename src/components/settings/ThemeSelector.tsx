@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "@/hooks/useSettings";
+import { useSetting, useSettingsActions } from "@/hooks/useSettings";
 import { applyTheme, THEME_OPTIONS } from "@/lib/utils/theme";
 import type { Theme } from "@/bindings";
 
@@ -14,9 +14,10 @@ interface ThemeSelectorProps {
 export const ThemeSelector: React.FC<ThemeSelectorProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { settings, updateSetting } = useSettings();
+    const value = useSetting("theme");
+    const { updateSetting } = useSettingsActions();
 
-    const currentTheme: Theme = settings?.theme ?? "system";
+    const currentTheme: Theme = value ?? "system";
 
     const themeOptions = THEME_OPTIONS.map((value) => ({
       value,
@@ -25,8 +26,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = React.memo(
 
     const handleThemeChange = (value: string) => {
       const theme = value as Theme;
-      applyTheme(theme);
-      updateSetting("theme", theme);
+      void updateSetting("theme", theme)
+        .then(() => applyTheme(theme))
+        .catch(() => {});
     };
 
     return (

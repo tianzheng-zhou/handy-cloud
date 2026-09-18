@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands, type CloudAsrModelOption } from "@/bindings";
-import { useSettings } from "@/hooks/useSettings";
+import { useSetting } from "@/hooks/useSettings";
 
 export const CloudAsrModelLabel: React.FC = () => {
   const { t } = useTranslation();
-  const { getSetting } = useSettings();
   const [modelOptions, setModelOptions] = useState<CloudAsrModelOption[]>([]);
 
-  const currentModelId = getSetting("cloud_asr_model") ?? "";
+  const currentModelId = useSetting("cloud_asr_model") ?? "";
 
   useEffect(() => {
     commands

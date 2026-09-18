@@ -31,7 +31,14 @@ fn import_from(source: &Path, destination: &Path) -> Result<()> {
     if !source.is_dir() {
         return Ok(());
     }
-    fs::create_dir_all(destination)?;
+    let mut directory = fs::DirBuilder::new();
+    directory.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        directory.mode(0o700);
+    }
+    directory.create(destination)?;
     // Headless invocations can start alongside the GUI's first launch.
     let lock = OpenOptions::new()
         .create(true)

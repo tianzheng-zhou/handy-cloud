@@ -563,26 +563,22 @@ pub fn run(cli_args: CliArgs) {
         .events(collect_events![managers::history::HistoryUpdatePayload,]);
 
     #[cfg(debug_assertions)]
-    {
-        let path = "../src/bindings.ts";
+    if cli_args.export_bindings {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/bindings.ts");
         specta_builder
             .export(
                 Typescript::default().bigint(BigIntExportBehavior::Number),
-                path,
+                &path,
             )
             .expect("Failed to export typescript bindings");
-        let generated = std::fs::read_to_string(path).expect("Failed to read generated bindings");
+        let generated = std::fs::read_to_string(&path).expect("Failed to read generated bindings");
         let normalized = generated
             .lines()
             .map(str::trim_end)
             .collect::<Vec<_>>()
             .join("\n")
             + "\n";
-        std::fs::write(path, normalized).expect("Failed to normalize generated bindings");
-    }
-
-    #[cfg(debug_assertions)]
-    if cli_args.export_bindings {
+        std::fs::write(&path, normalized).expect("Failed to normalize generated bindings");
         return;
     }
 

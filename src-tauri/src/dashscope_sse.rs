@@ -66,6 +66,9 @@ impl Decoder {
             return self.dispatch();
         }
         if let Some(data) = line.strip_prefix("data:") {
+            if self.event.len() + data.len() + 1 > 1024 * 1024 {
+                return Err("DashScope stream event exceeds 1 MiB".to_string());
+            }
             if !self.event.is_empty() {
                 self.event.push('\n');
             }
@@ -176,6 +179,10 @@ mod tests {
         }
         assert!(Decoder::default()
             .push(&vec![b'x'; 1024 * 1024 + 1])
+            .is_err());
+        let complete_oversized_event = format!("data: {}\n\n", "x".repeat(1024 * 1024 + 1));
+        assert!(Decoder::default()
+            .push(complete_oversized_event.as_bytes())
             .is_err());
     }
 }

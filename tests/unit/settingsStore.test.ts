@@ -104,3 +104,29 @@ describe("settings transactions", () => {
     await update;
   });
 });
+
+test("a failed queued write still allows the next write to succeed", async () => {
+  api.changeCloudAsrModel.mockImplementationOnce(async () => {
+    throw new Error("disk temporarily unavailable");
+  });
+  const store = createSettingsStore();
+  await store.getState().initialize();
+  const failed = store.getState().updateSetting("cloud_asr_model", "plus");
+  const next = store.getState().updateSetting("cloud_asr_model", "flash-next");
+  await expect(failed).rejects.toThrow("disk temporarily unavailable");
+  await next;
+  expect(store.getState().settings?.cloud_asr_model).toBe("flash-next");
+});
+
+test("a refresh started before a successful write cannot restore its stale snapshot", async () => {
+  const store = createSettingsStore();
+  await store.getState().initialize();
+  const old = { ...saved };
+  const pending = deferred<ReturnType<typeof ok<AppSettings>>>();
+  api.getAppSettings.mockImplementationOnce(() => pending.promise);
+  const refresh = store.getState().refreshSettings();
+  await store.getState().updateSetting("history_limit", 999);
+  pending.resolve(ok(old));
+  await refresh;
+  expect(store.getState().settings?.history_limit).toBe(999);
+});

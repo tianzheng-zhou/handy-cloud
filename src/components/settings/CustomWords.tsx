@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingContainer } from "../ui/SettingContainer";
@@ -14,9 +18,11 @@ interface CustomWordsProps {
 export const CustomWords: React.FC<CustomWordsProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { updateSetting } = useSettingsActions();
+    const setting_custom_words = useSetting("custom_words");
+    const updating_custom_words = useSettingUpdating("custom_words");
     const [newWord, setNewWord] = useState("");
-    const customWords = getSetting("custom_words") || [];
+    const customWords = setting_custom_words || [];
 
     const handleAddWord = () => {
       const trimmedWord = newWord.trim();
@@ -70,7 +76,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
               onKeyDown={handleKeyPress}
               placeholder={t("settings.advanced.customWords.placeholder")}
               variant="compact"
-              disabled={isUpdating("custom_words")}
+              disabled={updating_custom_words}
             />
             <Button
               onClick={handleAddWord}
@@ -78,7 +84,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
                 !newWord.trim() ||
                 newWord.includes(" ") ||
                 newWord.trim().length > 50 ||
-                isUpdating("custom_words")
+                updating_custom_words
               }
               variant="primary"
               size="md"
@@ -95,7 +101,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
               <Button
                 key={word}
                 onClick={() => handleRemoveWord(word)}
-                disabled={isUpdating("custom_words")}
+                disabled={updating_custom_words}
                 variant="secondary"
                 size="sm"
                 className="inline-flex items-center gap-1 cursor-pointer"

@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
-import { useSettings } from "../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../hooks/useSettings";
 import {
   getLanguageLabel,
   recognitionLanguage,
@@ -45,7 +49,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   supportsLanguageDetection = true,
 }) => {
   const { t } = useTranslation();
-  const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
+  const { updateSetting, resetSetting } = useSettingsActions();
+  const setting_selected_language = useSetting("selected_language");
+  const updating_selected_language = useSettingUpdating("selected_language");
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -53,7 +59,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   // The persisted *intent* (auto | code). What's actually used/shown is the
   // effective value resolved against the current model's capabilities.
-  const intent = getSetting("selected_language") || "auto";
+  const intent = setting_selected_language || "auto";
   const selectedLanguage = effectiveLanguage(
     intent,
     supportedLanguages ?? [],
@@ -105,17 +111,19 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     getLanguageLabel(selectedLanguage) || t("settings.general.language.auto");
 
   const handleLanguageSelect = async (languageCode: string) => {
-    await updateSetting("selected_language", languageCode);
+    try {
+      await updateSetting("selected_language", languageCode);
+    } catch {
+      return;
+    }
     setIsOpen(false);
     setSearchQuery("");
   };
 
-  const handleReset = async () => {
-    await resetSetting("selected_language");
-  };
+  const handleReset = () => resetSetting("selected_language");
 
   const handleToggle = () => {
-    if (isUpdating("selected_language")) return;
+    if (updating_selected_language) return;
     setIsOpen(!isOpen);
   };
 
@@ -145,12 +153,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           <button
             type="button"
             className={`px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] text-start flex items-center justify-between transition-all duration-150 ${
-              isUpdating("selected_language")
+              updating_selected_language
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
             }`}
             onClick={handleToggle}
-            disabled={isUpdating("selected_language")}
+            disabled={updating_selected_language}
           >
             <span className="truncate">{selectedLanguageName}</span>
             <svg
@@ -170,7 +178,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </svg>
           </button>
 
-          {isOpen && !isUpdating("selected_language") && (
+          {isOpen && !updating_selected_language && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-mid-gray/80 rounded shadow-lg z-50 max-h-60 overflow-hidden">
               {/* Search input */}
               <div className="p-2 border-b border-mid-gray/80">
@@ -214,10 +222,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         </div>
         <ResetButton
           onClick={handleReset}
-          disabled={isUpdating("selected_language")}
+          disabled={updating_selected_language}
         />
       </div>
-      {isUpdating("selected_language") && (
+      {updating_selected_language && (
         <div className="absolute inset-0 bg-mid-gray/10 rounded flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-logo-primary border-t-transparent rounded-full animate-spin"></div>
         </div>

@@ -4,6 +4,12 @@ import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
+  savePostProcessPrompt: (prompt: {
+    id?: string;
+    name: string;
+    prompt: string;
+  }) => Promise<void>;
+  deletePostProcessPrompt: (id: string) => Promise<void>;
   lastError: { message: string } | null;
   settings: Settings | null;
   defaultSettings: Settings | null;
@@ -250,18 +256,19 @@ export const createSettingsStore = () => {
         setOutputDevices: (outputDevices) => set({ outputDevices }),
         setCustomSounds: (customSounds) => set({ customSounds }),
         getSetting: (key) => get().settings?.[key],
-        isUpdatingKey: (key) => !!get().isUpdating[key],
+        isUpdatingKey: (key) => !!get().isUpdating[settingsQueueKey(key)],
         refreshSettings: async () => {
           const before = new Map(revisions);
           try {
             const settings = unwrap(await commands.getAppSettings());
             const fields = (Object.keys(settings) as (keyof Settings)[]).filter(
-              (key) =>
-                !queues.has(key) &&
-                before.get(key) === revisions.get(key) &&
-                !(
-                  key.startsWith("post_process_") && queues.has("post_process")
-                ),
+              (key) => {
+                const queueKey = settingsQueueKey(key);
+                return (
+                  !queues.has(queueKey) &&
+                  before.get(queueKey) === revisions.get(queueKey)
+                );
+              },
             );
             mergeFields(settings, fields);
           } catch (error) {
@@ -327,7 +334,7 @@ export const createSettingsStore = () => {
             checkResult(await commands.playTestSound(sound));
           }),
         updateSetting: (key, value) =>
-          run(key, async () => {
+          run(settingsQueueKey(key), async () => {
             const previous = get().settings?.[key];
             const updater = settingUpdaters[key];
             if (!updater) throw new Error(`Unsupported setting: ${key}`);
@@ -397,6 +404,25 @@ export const createSettingsStore = () => {
                 get().setPostProcessModelOptions(providerId, []);
             },
           ),
+        savePostProcessPrompt: (prompt) =>
+          updateFields(
+            "post_process",
+            ["post_process_prompts", "post_process_selected_prompt_id"],
+            () =>
+              prompt.id
+                ? commands.updatePostProcessPrompt(
+                    prompt.id,
+                    prompt.name,
+                    prompt.prompt,
+                  )
+                : commands.addPostProcessPrompt(prompt.name, prompt.prompt),
+          ),
+        deletePostProcessPrompt: (id) =>
+          updateFields(
+            "post_process",
+            ["post_process_prompts", "post_process_selected_prompt_id"],
+            () => commands.deletePostProcessPrompt(id),
+          ),
         updatePostProcessBaseUrl: (id, value) =>
           get().updatePostProcessSetting("base_url", id, value),
         updatePostProcessApiKey: (id, value) =>
@@ -452,4 +478,13 @@ function checkResult(result: unknown): void {
   }
 }
 
+export function settingsQueueKey(key: string): string {
+  if (key.startsWith("binding_")) return "bindings";
+  if (
+    key.startsWith("post_process_") &&
+    !key.startsWith("post_process_models_fetch:")
+  )
+    return "post_process";
+  return key;
+}
 export const useSettingsStore = createSettingsStore();

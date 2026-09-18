@@ -1166,8 +1166,11 @@ pub fn add_post_process_prompt(
     prompt: String,
 ) -> Result<LLMPrompt, String> {
     settings::update_settings(&app, |settings| {
-        // Generate unique ID using timestamp and random component
-        let id = format!("prompt_{}", chrono::Utc::now().timestamp_millis());
+        // Serialized writes with nanosecond IDs avoid same-millisecond collisions.
+        let id = format!(
+            "prompt_{}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        );
 
         let new_prompt = LLMPrompt {
             id: id.clone(),
@@ -1176,6 +1179,7 @@ pub fn add_post_process_prompt(
         };
 
         settings.post_process_prompts.push(new_prompt.clone());
+        settings.post_process_selected_prompt_id = Some(id);
 
         Ok(new_prompt)
     })

@@ -2,7 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Dropdown, type DropdownOption } from "../../ui/Dropdown";
-import { useSettings } from "../../../hooks/useSettings";
+import {
+  useSetting,
+  useSettingUpdating,
+  useSettingsActions,
+} from "../../../hooks/useSettings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
 
@@ -20,9 +24,12 @@ export const KeyboardImplementationSelector: React.FC<
   KeyboardImplementationSelectorProps
 > = ({ descriptionMode = "tooltip", grouped = false }) => {
   const { t } = useTranslation();
-  const { getSetting, isUpdating, refreshSettings } = useSettings();
-  const currentImplementation =
-    getSetting("keyboard_implementation") ?? "tauri";
+  const { refreshSettings } = useSettingsActions();
+  const setting_keyboard_implementation = useSetting("keyboard_implementation");
+  const updating_keyboard_implementation = useSettingUpdating(
+    "keyboard_implementation",
+  );
+  const currentImplementation = setting_keyboard_implementation ?? "tauri";
 
   const handleSelect = async (value: string) => {
     if (value === currentImplementation) return;
@@ -63,7 +70,7 @@ export const KeyboardImplementationSelector: React.FC<
         options={KEYBOARD_IMPLEMENTATION_OPTIONS}
         selectedValue={currentImplementation}
         onSelect={handleSelect}
-        disabled={isUpdating("keyboard_implementation")}
+        disabled={updating_keyboard_implementation}
       />
     </SettingContainer>
   );

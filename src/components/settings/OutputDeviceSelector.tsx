@@ -31,12 +31,12 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
           ? "Default"
           : getSetting("selected_output_device") || "Default";
 
-      const handleOutputDeviceSelect = async (deviceName: string) => {
-        await updateSetting("selected_output_device", deviceName);
+      const handleOutputDeviceSelect = (deviceName: string) => {
+        return updateSetting("selected_output_device", deviceName);
       };
 
-      const handleReset = async () => {
-        await resetSetting("selected_output_device");
+      const handleReset = () => {
+        return resetSetting("selected_output_device");
       };
 
       const outputDeviceOptions = outputDevices.map((device: AudioDevice) => ({

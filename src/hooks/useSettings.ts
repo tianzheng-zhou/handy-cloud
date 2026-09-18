@@ -1,5 +1,6 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect } from "react";
-import { useSettingsStore } from "../stores/settingsStore";
+import { useSettingsStore, settingsQueueKey } from "../stores/settingsStore";
 import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 
 interface UseSettingsReturn {
@@ -76,3 +77,29 @@ export const useSettings = (): UseSettingsReturn => {
     fetchPostProcessModels: store.fetchPostProcessModels,
   };
 };
+
+/** Subscribe only to the field a control renders. Initialization is shared. */
+export function useSetting<K extends keyof Settings>(
+  key: K,
+): Settings[K] | undefined {
+  const value = useSettingsStore((state) => state.settings?.[key]);
+  useEffect(() => {
+    void useSettingsStore.getState().initialize();
+  }, []);
+  return value;
+}
+
+export function useSettingUpdating(key: string): boolean {
+  return useSettingsStore((state) => !!state.isUpdating[settingsQueueKey(key)]);
+}
+
+/** Stable actions do not subscribe controls to unrelated settings or device lists. */
+export function useSettingsActions() {
+  return useSettingsStore(
+    useShallow((state) => ({
+      updateSetting: state.updateSetting,
+      resetSetting: state.resetSetting,
+      refreshSettings: state.refreshSettings,
+    })),
+  );
+}

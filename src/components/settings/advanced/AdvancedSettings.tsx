@@ -15,7 +15,7 @@ import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { HistoryLimit } from "../HistoryLimit";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
-import { useSettings } from "../../../hooks/useSettings";
+import { useSetting } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { VoiceActivityDetection } from "../VoiceActivityDetection";
 import { ScreenContext } from "../ScreenContext";
@@ -23,8 +23,9 @@ import { LazyStreamClose } from "../LazyStreamClose";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { getSetting } = useSettings();
-  const experimentalEnabled = getSetting("experimental_enabled") || false;
+  const setting_experimental_enabled = useSetting("experimental_enabled");
+
+  const experimentalEnabled = setting_experimental_enabled || false;
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">

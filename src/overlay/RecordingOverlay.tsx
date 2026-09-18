@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
+import { useSettingsStore } from "@/stores/settingsStore";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
@@ -21,54 +22,48 @@ const RecordingOverlay: React.FC = () => {
   const direction = getLanguageDirection(i18n.language);
 
   useEffect(() => {
-    const setupEventListeners = async () => {
-      const unlistenShow = await listen("show-overlay", async (event) => {
-        await syncLanguageFromSettings();
-        try {
-          const settings = await commands.getAppSettings();
-          if (settings.status === "ok") {
-            setPosition(
-              settings.data.overlay_position === "top" ? "top" : "bottom",
-            );
-          }
-        } catch {
-          // Keep the previous/default placement if settings can't be read.
-        }
-        setState(event.payload as OverlayState);
+    let disposed = false;
+    let generation = 0;
+    const listeners: (() => void)[] = [];
+    const retain = (unlisten: () => void) => {
+      if (disposed) unlisten();
+      else listeners.push(unlisten);
+    };
+    const cleanup = () => {
+      disposed = true;
+      generation++;
+      listeners.splice(0).forEach((unlisten) => unlisten());
+    };
+    void Promise.all([
+      listen<OverlayState>("show-overlay", async (event) => {
+        const current = ++generation;
+        setState(event.payload);
         setIsVisible(true);
-      });
-
-      const unlistenHide = await listen("hide-overlay", () => {
+        await useSettingsStore.getState().refreshSettings();
+        await syncLanguageFromSettings();
+        if (disposed || current !== generation) return;
+        setPosition(
+          useSettingsStore.getState().settings?.overlay_position === "top"
+            ? "top"
+            : "bottom",
+        );
+      }).then(retain),
+      listen("hide-overlay", () => {
+        generation++;
         setIsVisible(false);
-      });
-
-      const unlistenLevel = await listen<number[]>("mic-level", (event) => {
-        const newLevels = event.payload as number[];
-        const smoothed = smoothedLevelsRef.current.map((prev, i) => {
-          const target = newLevels[i] || 0;
-          return prev * 0.7 + target * 0.3;
-        });
+      }).then(retain),
+      listen<number[]>("mic-level", (event) => {
+        const smoothed = smoothedLevelsRef.current.map(
+          (prev, i) => prev * 0.7 + (event.payload[i] || 0) * 0.3,
+        );
         smoothedLevelsRef.current = smoothed;
         setLevels(smoothed.slice(0, WAVE_BARS));
-      });
-
-      return () => {
-        unlistenShow();
-        unlistenHide();
-        unlistenLevel();
-      };
-    };
-
-    let disposed = false;
-    let cleanup: (() => void) | undefined;
-    void setupEventListeners().then((unlisten) => {
-      if (disposed) unlisten();
-      else cleanup = unlisten;
+      }).then(retain),
+    ]).catch((error) => {
+      cleanup();
+      console.error("Overlay listeners failed", error);
     });
-    return () => {
-      disposed = true;
-      cleanup?.();
-    };
+    return cleanup;
   }, []);
 
   const waveform = (

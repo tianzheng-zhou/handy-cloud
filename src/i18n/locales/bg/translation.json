@@ -3,15 +3,13 @@
     "settings": "Настройки...",
     "checkUpdates": "Проверка за актуализации...",
     "copyLastTranscript": "Копиране на последния транскрипт",
-    "unloadModel": "Разтоварване на модела",
-    "model": "Модел",
     "quit": "Изход",
     "cancel": "Отказ",
     "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input"
   },
   "sidebar": {
     "general": "Общи",
-    "models": "Модели",
+    "cloudAsr": "ASR",
     "advanced": "Разширени",
     "postProcessing": "Постобработка",
     "history": "История",
@@ -19,85 +17,24 @@
     "about": "За приложението"
   },
   "onboarding": {
-    "subtitle": "За да започнете, изберете модел за транскрипция",
-    "existingModelsTitle": "Съвместими модели",
-    "downloadModelsTitle": "Достъпни за изтегляне",
-    "showAllModels": "Показване на всички {{total}} модела",
-    "showFewerModels": "Показване на по-малко модели",
+    "cloudAsr": {
+      "subtitle": "Connect your Alibaba Bailian (DashScope) API key to transcribe speech in the cloud",
+      "apiKey": {
+        "title": "Bailian API Key",
+        "description": "Your DashScope API key is stored locally and used for cloud transcription.",
+        "placeholder": "sk-..."
+      },
+      "continue": "Continue",
+      "continueLoading": "Saving…",
+      "errors": {
+        "apiKeyRequired": "An API key is required to continue",
+        "setupFailed": "Failed to save your API key. Please try again."
+      }
+    },
     "recommended": "Препоръчан",
-    "customModelDescription": "Не се поддържа официално",
     "modelCard": {
       "accuracy": "точност",
       "speed": "скорост"
-    },
-    "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "Бърз и доста точен."
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": "Добра точност, средна скорост."
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "Баланс между точност и скорост."
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": "Добра точност, но по-бавен."
-      },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Само английски. Най-добрият модел за носители на английски."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Бърз и точен."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Много бърз, само английски. Добре обработва акценти."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ултрабърз, само английски."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Бърз, само английски. Добър баланс между скорост и точност."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Само английски. Високо качество."
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "Оптимизиран за тайвански мандарин. Поддръжка на смесване на езици."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Много бърз. Китайски, английски, японски, корейски, кантонски."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Разпознаване на руска реч. Бърз и точен."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Много бърз. Английски, немски, испански, френски. Поддържа превод."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Точен многоезичен. 25 европейски езика. Поддържа превод."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Голям, по-бавен, но много точен многоезичен модел."
-      }
-    },
-    "errors": {
-      "selectModel": "Неуспешно избиране на модел"
     },
     "permissions": {
       "title": "Необходими разрешения",
@@ -121,42 +58,56 @@
     }
   },
   "modelSelector": {
-    "custom": "Персонализиран",
-    "streaming": "Стрийминг",
-    "active": "Активен",
-    "switching": "Превключване...",
-    "noModelsAvailable": "Няма налични модели",
-    "verifying": "Проверка на {{modelName}}...",
-    "verifyingGeneric": "Проверка...",
-    "extracting": "Разархивиране на {{modelName}}...",
-    "extractingMultiple": "Разархивиране на {{count}} модела...",
-    "extractingGeneric": "Разархивиране...",
-    "downloading": "Изтегляне {{percentage}}%",
-    "downloadingMultiple": "Изтегляне на {{count}} модела...",
-    "modelReady": "Моделът е готов",
-    "loading": "Зареждане на {{modelName}}...",
-    "loadingGeneric": "Зареждане...",
-    "modelError": "Грешка в модела",
-    "modelUnloaded": "Моделът е разтоварен",
-    "noModelDownloadRequired": "Няма модел – необходимо е изтегляне",
-    "deleteModel": "Изтриване на {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Отказ",
-    "cancelDownload": "Отказ на изтеглянето",
-    "capabilities": {
-      "languageSelection": "Поддържа няколко входни езика",
-      "singleLanguage": "Поддържа само този език",
-      "languageCount": "{{total}} езика",
-      "languageOnly": "Само {{language}}",
-      "translation": "Може да превежда на английски",
-      "translate": "Превод на английски",
-      "streaming": "Показва транскрипция на живо, докато говорите"
-    },
-    "legacy": "Наследен"
+    "active": "Активен"
+  },
+  "footer": {
+    "checkingUpdates": "Проверка за актуализации...",
+    "updateAvailableShort": "Налична актуализация",
+    "upToDate": "Актуална версия",
+    "updateCheckingDisabled": "Проверката за актуализации е изключена",
+    "downloading": "Изтегля се... {{progress}}%",
+    "installing": "Инсталиране...",
+    "preparing": "Подготовка...",
+    "checkForUpdates": "Проверка за актуализации",
+    "portableUpdateTitle": "Необходима е ръчна актуализация",
+    "portableUpdateMessage": "Преносимите инсталации не могат да бъдат актуализирани автоматично. За актуализация: изтеглете най-новия NSIS инсталатор от GitHub Releases, инсталирайте го в същата папка, след което копирайте папката Data/ (настройки, модели, записи) от старата версия в новата.",
+    "portableUpdateButton": "Отвори GitHub Releases"
   },
   "settings": {
+    "cloudAsr": {
+      "title": "Cloud ASR",
+      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen3.5-Omni.",
+      "groupTitle": "Connection",
+      "apiKey": {
+        "title": "API Key",
+        "description": "Your DashScope API key for cloud speech recognition.",
+        "placeholder": "sk-..."
+      },
+      "baseUrl": {
+        "title": "Base URL",
+        "description": "DashScope OpenAI-compatible endpoint. Change only if you use a custom gateway.",
+        "placeholder": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      },
+      "model": {
+        "title": "Model",
+        "groupTitle": "Models",
+        "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
+        "placeholder": "Select a model…"
+      },
+      "models": {
+        "flash": {
+          "name": "Qwen3.5-Omni Flash",
+          "description": "Fast and cost-efficient. Best default for everyday dictation."
+        },
+        "plus": {
+          "name": "Qwen3.5-Omni Plus",
+          "description": "Higher accuracy for noisy audio and careful transcription. Slightly slower."
+        }
+      }
+    },
     "modelSettings": {
-      "title": "Настройки на {{model}}"
+      "title": "Настройки на {{model}}",
+      "cloudTitle": "Transcription"
     },
     "general": {
       "title": "Общи",
@@ -199,24 +150,6 @@
         "description": "Задръжте за запис, пуснете за спиране"
       }
     },
-    "models": {
-      "title": "Модели за транскрипция",
-      "description": "Изберете модел за транскрипция или изтеглете допълнителни. Различните модели предлагат различна точност и скорост.",
-      "yourModels": "Изтеглени модели",
-      "availableModels": "Налични за изтегляне",
-      "deleteConfirm": "Сигурни ли сте, че искате да изтриете {{modelName}}? Ще трябва да го изтеглите отново, за да го използвате.",
-      "deleteActiveConfirm": "{{modelName}} е вашият активен модел. Изтриването му ще спре транскрипциите, докато не изберете нов модел. Сигурни ли сте?",
-      "deleteTitle": "Изтриване на модел",
-      "filters": {
-        "allLanguages": "Всички езици"
-      },
-      "noModelsMatch": "Няма модели, отговарящи на този филтър.",
-      "searchPlaceholder": "Търсене на модели по име…",
-      "rescan": {
-        "label": "Сканиране отново",
-        "tooltip": "Сканиране отново за модели, добавени в папката с модели или кеша на Hugging Face извън Handy Cloud"
-      }
-    },
     "sound": {
       "title": "Звук",
       "microphone": {
@@ -256,19 +189,6 @@
         "label": "Държане на микрофона отворен между транскрипции",
         "description": "Държи потокът от микрофона отворен 30 секунди след спиране на записа, което намалява забавянето при поредни транскрипции. Може да влоши качеството на Bluetooth аудио, докато е активно."
       },
-      "acceleration": {
-        "transcribe": {
-          "title": "Ускорение за Whisper",
-          "description": "Хардуерно ускорение за моделите Whisper. „Автоматично“ използва GPU при наличност (Metal на macOS, Vulkan на Windows/Linux)."
-        },
-        "ort": {
-          "title": "Ускорение за ONNX",
-          "description": "Хардуерно ускорение за ONNX модели (Parakeet, Canary, Moonshine и др.). DirectML на Windows е експериментален. Моделите може да не транскрибират."
-        },
-        "gpuDevice": {
-          "auto": "Автоматично"
-        }
-      },
       "startHidden": {
         "label": "Стартиране скрито",
         "description": "Стартиране в системната област без отваряне на прозореца."
@@ -287,8 +207,7 @@
           "description": "Изберете наслагването при запис: «Няма» го скрива, «Минимално» показва компактен индикатор, «На живо» показва транскрипцията в реално време, докато говорите (само модели с поддръжка на стрийминг — потърсете етикета «Стрийминг» в избора на модел). На Linux се препоръчва «Няма».",
           "options": {
             "none": "Няма",
-            "minimal": "Минимално",
-            "live": "На живо"
+            "minimal": "Минимално"
           }
         },
         "position": {
@@ -343,20 +262,6 @@
         "label": "Превод на английски",
         "description": "Автоматичен превод на реч от други езици на английски по време на транскрипция."
       },
-      "modelUnload": {
-        "title": "Разтоварване на модела",
-        "description": "Автоматично освобождаване на памет на GPU/CPU, ако моделът не е използван за зададеното време",
-        "options": {
-          "never": "Никога",
-          "immediately": "Веднага",
-          "min2": "След 2 минути",
-          "min5": "След 5 минути",
-          "min10": "След 10 минути",
-          "min15": "След 15 минути",
-          "hour1": "След 1 час",
-          "sec15": "След 15 секунди (отстраняване)"
-        }
-      },
       "customWords": {
         "title": "Персонализирани думи",
         "description": "Помогнете на поддържаните модели да разпознават имена и специализирани термини. Приблизителната корекция в момента е ограничена до думи с букви A–Z и цифри.",
@@ -368,6 +273,19 @@
       "voiceActivityDetection": {
         "title": "Откриване на гласова активност",
         "description": "Филтрира тишината от записите. Моделите с поддръжка на стрийминг използват по-дълга опашка на VAD; изключването на VAD записва необработен звук."
+      },
+      "screenContext": {
+        "label": "Use screen as context",
+        "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
+        "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
+        "method": {
+          "title": "Screen capture method",
+          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
+          "options": {
+            "screenshot": "Screenshot (may flash)",
+            "screencast": "ScreenCast (silent)"
+          }
+        }
       }
     },
     "postProcessing": {
@@ -464,6 +382,13 @@
         "label": "Проверка за актуализации",
         "description": "Автоматична проверка за нови версии на Handy Cloud"
       },
+      "whatsNewPreview": {
+        "title": "Преглед на новостите",
+        "description": "Отваря последните включени бележки към изданието, без да ги маркира като видени",
+        "button": "Преглед",
+        "noNotes": "Не са намерени включени бележки към изданието",
+        "error": "Неуспешен преглед на бележките към изданието"
+      },
       "soundTheme": {
         "label": "Звукова тема",
         "description": "Избор на звукова тема за сигнал при старт и край на записа"
@@ -552,13 +477,6 @@
         "verdictOk": "Клавишните събития достигат до Handy Cloud нормално.",
         "verdictNoEvents": "Не са уловени събития — натиснахте ли някакви клавиши по време на теста?",
         "failed": "Диагностиката е неуспешна: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "Преглед на новостите",
-        "description": "Отваря последните включени бележки към изданието, без да ги маркира като видени",
-        "button": "Преглед",
-        "noNotes": "Не са намерени включени бележки към изданието",
-        "error": "Неуспешен преглед на бележките към изданието"
       }
     },
     "about": {
@@ -566,6 +484,10 @@
       "version": {
         "title": "Версия",
         "description": "Текуща версия на Handy Cloud"
+      },
+      "whatsNewUpdates": {
+        "label": "Показвай новостите",
+        "description": "Показвай бележки към изданието след актуализации на Handy Cloud"
       },
       "appDataDirectory": {
         "title": "Папка с данни на приложението",
@@ -583,35 +505,16 @@
       },
       "acknowledgments": {
         "title": "Благодарности",
-        "ggml": {
-          "title": "ggml",
-          "description": "Високопроизводително изпълнение на автоматичния модел за разпознаване на реч Whisper на OpenAI",
-          "details": "Handy Cloud използва ggml за бързо локално реч-към-текст. Благодарности на Georgi Gerganov и сътрудниците за отличната работа."
-        },
         "handy": {
           "title": "Handy / cjpais",
           "description": "Based on the original Handy project (MIT License).",
           "details": "Handy Cloud retains the original project’s copyright and contributor credits."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "Показвай новостите",
-        "description": "Показвай бележки към изданието след актуализации на Handy Cloud"
       }
     }
   },
-  "footer": {
-    "checkingUpdates": "Проверка за актуализации...",
-    "updateAvailableShort": "Налична актуализация",
-    "upToDate": "Актуална версия",
-    "updateCheckingDisabled": "Проверката за актуализации е изключена",
-    "downloading": "Изтегля се... {{progress}}%",
-    "installing": "Инсталиране...",
-    "preparing": "Подготовка...",
-    "checkForUpdates": "Проверка за актуализации",
-    "portableUpdateTitle": "Необходима е ръчна актуализация",
-    "portableUpdateMessage": "Преносимите инсталации не могат да бъдат актуализирани автоматично. За актуализация: изтеглете най-новия NSIS инсталатор от GitHub Releases, инсталирайте го в същата папка, след което копирайте папката Data/ (настройки, модели, записи) от старата версия в новата.",
-    "portableUpdateButton": "Отвори GitHub Releases"
+  "whatsNew": {
+    "title": "Ново в Handy Cloud v{{version}}"
   },
   "common": {
     "loading": "Зареждане...",
@@ -620,7 +523,9 @@
     "open": "Отваряне",
     "copy": "Копиране",
     "clear": "Изчистване",
-    "noOptionsFound": "Няма намерени опции"
+    "noOptionsFound": "Няма намерени опции",
+    "moreInformation": "More information",
+    "selectOption": "Select an option…"
   },
   "accessibility": {
     "permissionsDescription": "Handy Cloud се нуждае от разрешения за достъпност, за да въвежда транскрибирания текст.",
@@ -638,11 +543,11 @@
     "noInputDeviceTitle": "Не е намерен микрофон",
     "noInputDevice": "Не е открито аудио входно устройство. Свържете микрофон или слушалки и опитайте отново.",
     "recordingFailed": "Стартирането на записа не бе успешно: {{error}}",
-    "modelLoadFailed": "Зареждането на модела не бе успешно: {{model}}",
-    "modelLoadFailedUnknown": "неизвестен модел",
     "pasteFailedTitle": "Неуспешно поставяне на текст",
     "pasteFailed": "Текстът не можа да бъде поставен в активното приложение.",
-    "transcriptionFailedTitle": "Неуспешна транскрипция"
+    "transcriptionFailedTitle": "Неуспешна транскрипция",
+    "recordingSaveFailed": "The audio could not be saved to history. Transcription will continue.",
+    "settingsSaveFailed": "Could not save settings. Please try again."
   },
   "appLanguage": {
     "title": "Език на приложението",
@@ -660,9 +565,6 @@
   "overlay": {
     "transcribing": "Транскрибиране...",
     "processing": "Обработка..."
-  },
-  "whatsNew": {
-    "title": "Ново в Handy Cloud v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} може да блокира 1 бърз клавиш",

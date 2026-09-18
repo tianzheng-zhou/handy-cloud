@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  testMatch: "**/*.spec.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -18,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bunx vite dev",
+    command: "bun run dev",
     url: "http://localhost:1420",
     reuseExistingServer: !process.env.CI,
     timeout: 30000,

@@ -1,249 +1,87 @@
-# Build Instructions
+# Building Handy Cloud
 
-This guide covers how to set up the development environment and build Handy from source across different platforms.
+Use **Bun 1.4.2** (the version in `packageManager`) and latest stable Rust with rustfmt and Clippy. Bun is the supported package manager; commit `bun.lock` and the generated `.nix/bun.nix` / `.nix/bun-lock-hash` together. Do not add npm/yarn/pnpm lockfiles.
 
-## Prerequisites
+## Native dependencies
 
-### All Platforms
-
-- [Rust](https://rustup.rs/) (latest stable)
-- [Bun](https://bun.sh/) package manager
-- [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
-
-### Platform-Specific Requirements
-
-#### macOS
-
-- Xcode Command Line Tools
-- Install with: `xcode-select --install`
-
-##### Intel Mac (x86_64)
-
-Prebuilt ONNX Runtime binaries are not available for Intel Macs. Install ONNX Runtime via Homebrew and link dynamically:
+Ubuntu 24.04:
 
 ```bash
-brew install onnxruntime
-ORT_LIB_LOCATION=$(brew --prefix onnxruntime)/lib ORT_PREFER_DYNAMIC_LINK=1 bun run tauri dev
+sudo apt-get update
+sudo apt-get install -y build-essential pkg-config cmake curl \
+  libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+  libasound2-dev libssl-dev libgtk-layer-shell-dev \
+  libxdo-dev libx11-dev libxtst-dev libxrandr-dev
 ```
 
-The same environment variables apply for production builds:
+For Linux screen context, also install the desktop's `xdg-desktop-portal` backend, PipeWire, `gstreamer1.0-tools` and `gstreamer1.0-pipewire`. This is runtime functionality, not required by unit tests.
+
+Windows: install Visual Studio Build Tools with Desktop development with C++, the Windows SDK, and WebView2. Use the MSVC Rust toolchain. macOS: install Xcode and its command line tools; Apple Silicon builds compile the Swift bridge for optional Apple Intelligence post-processing (or its fallback stub on older SDKs).
+
+ONNX Runtime remains required for Silero VAD. The Rust `ort` dependency normally downloads its native runtime at build time. If its download service is unavailable, use the matching [official ONNX Runtime release](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.2), extract it, and set `ORT_LIB_LOCATION` to its `lib` directory and `ORT_PREFER_DYNAMIC_LINK=1`. On Linux also add that directory to `LD_LIBRARY_PATH` when testing. Do not enable local ASR GPU dependencies: Vulkan, shaderc and OpenBLAS are not needed by Handy Cloud.
+
+## Setup and run
 
 ```bash
-ORT_LIB_LOCATION=$(brew --prefix onnxruntime)/lib ORT_PREFER_DYNAMIC_LINK=1 bun run tauri build
+bun install --frozen-lockfile
+mkdir -p src-tauri/resources/models
+curl --fail --location --retry 3 \
+  -o src-tauri/resources/models/silero_vad_v4.onnx \
+  https://blob.handy.computer/silero_vad_v4.onnx
+bun run tauri dev
 ```
 
-#### Windows
+The VAD file is the only required model download. Configure a Bailian API Key in onboarding. No local Whisper/Parakeet models are used. Keep keys out of source control.
 
-- Microsoft C++ Build Tools: Visual Studio 2019/2022 with C++ development
-  tools, or Visual Studio Build Tools 2019/2022
-- [CMake](https://cmake.org/download/) (must be on `PATH`):
+For a macOS CMake policy compatibility error, use `CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev`.
 
-  ```powershell
-  winget install Kitware.CMake
-  ```
-
-- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) from LunarG — required to
-  build the Vulkan GPU backend (`vulkan-shaders-gen` needs the SDK's headers
-  and `glslc`):
-
-  ```powershell
-  winget install KhronosGroup.VulkanSDK
-  ```
-
-  Open a new terminal afterward so `VULKAN_SDK` is set.
-
-> [!NOTE]
-> Windows' 260-character path limit used to break the native Vulkan build in
-> most checkouts. Since `transcribe-cpp` 0.1.3 the build works around it
-> automatically (it compiles through a short NTFS junction — no admin rights
-> or setup needed), so a normal checkout just builds. If you still hit
-> path-limit errors, see
-> [Windows build fails with path-limit errors](#windows-build-fails-with-path-limit-errors-msb3491--ftk1011--msb6003)
-> in Troubleshooting.
-
-#### Linux
-
-- Build essentials
-- ALSA development libraries
-- Install with:
-
-  ```bash
-  # Ubuntu/Debian
-  sudo apt update
-  sudo apt install build-essential libasound2-dev pkg-config libssl-dev libvulkan-dev vulkan-tools glslc spirv-headers glslang-tools libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libgtk-layer-shell0 libgtk-layer-shell-dev patchelf cmake
-
-  # Fedora/RHEL
-  sudo dnf groupinstall "Development Tools"
-  sudo dnf install alsa-lib-devel pkgconf openssl-devel vulkan-devel \
-    spirv-headers-devel spirv-tools-devel glslang glslc \
-    gtk3-devel webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel \
-    gtk-layer-shell gtk-layer-shell-devel \
-    cmake
-
-  # Arch Linux
-  sudo pacman -S base-devel alsa-lib pkgconf openssl vulkan-devel \
-    spirv-headers glslang shaderc \
-    gtk3 webkit2gtk-4.1 libappindicator-gtk3 librsvg gtk-layer-shell \
-    cmake
-  ```
-
-## Setup Instructions
-
-### 1. Clone the Repository
+## Checks
 
 ```bash
-git clone git@github.com:cjpais/Handy.git
-cd Handy
+bun run typecheck
+bun run lint
+bun run format:check
+bun run check:translations
+bun run check:nix-deps
+bun test tests/unit
+bun run build
+bun run check:bundle
+bunx playwright install chromium
+bun run test:playwright
+cargo test --manifest-path src-tauri/Cargo.toml --locked
+cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
+bun run bindings
+git diff -- src/bindings.ts
 ```
 
-### 2. Install Dependencies
+Type checking does not emit Vite configuration files. Build/dev/preview explicitly use `vite.config.ts`. `bun run bindings` runs the debug-only exporter without starting Tauri windows or touching user data; review and commit binding changes. Rust business tests and Playwright IPC mocks need neither cloud credentials nor actual microphone recordings. HTTP tests bind local loopback sockets.
 
-```bash
-bun install
-```
+Playwright tests cover onboarding, cloud model persistence and errors, history events, and language loading/cache. They do not exercise native shortcuts, portals, microphone hardware or OS paste permissions. On Ubuntu 26.04, Playwright 1.58 does not yet identify the distro; local verification can use `PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64` with compatible native libraries. CI runs Ubuntu 24.04.
 
-### 3. Start Dev Server
-
-```bash
-bun tauri dev
-```
-
-### 4. Build for Production
+## Packages and updates
 
 ```bash
 bun run tauri build
+# Linux examples:
+bun run tauri build --bundles deb
+bun run tauri build --bundles appimage,rpm
 ```
 
-This compiles a release binary and generates platform-specific bundles (deb, rpm, AppImage on Linux; dmg on macOS; msi on Windows).
+Artifacts are in `src-tauri/target/release/bundle/` (or the target triple's directory when cross-compiling). Binary: `handy-cloud` / `handy-cloud.exe`; macOS app: `Handy Cloud.app`. Build natively on each OS for package validation.
 
-## Linux Install (from source)
+Ordinary packages are unsigned (macOS uses ad-hoc signing). No publisher credentials or updater keys are required. The **Main Branch Build** workflow is manual and builds the existing Linux/macOS/Windows matrix as downloadable Actions artifacts; it does not create or publish Releases. Upload reviewed installers manually when ready. OS signing/notarization and real-device permission/paste testing are separate release work.
 
-The raw binary (`src-tauri/target/release/handy`) cannot run standalone — it needs Tauri resource files (tray icons, sounds, VAD model) to be co-located at the expected path.
+Updater controls and tray entry are governed by `get_update_capability`. To enable later, configure this project's HTTPS endpoint and public key, enable updater artifacts, and provide the matching signing key only to a dedicated release process. Never reuse the upstream endpoint/key. Follow [Tauri's updater signing requirements](https://v2.tauri.app/plugin/updater/#signing-updates).
 
-**Install from the deb bundle** (works on any Linux distro):
+## Nix
 
 ```bash
-cd /tmp
-ar x /path/to/Handy/src-tauri/target/release/bundle/deb/Handy_*_amd64.deb data.tar.gz
-tar xzf data.tar.gz
-sudo cp usr/bin/handy /usr/bin/
-sudo cp -a usr/lib/. /usr/lib/
-sudo cp -r usr/share/icons/hicolor/* /usr/share/icons/hicolor/
-sudo cp usr/share/applications/Handy.desktop /usr/share/applications/
+nix develop
+nix build .#handy
 ```
 
-The runtime libraries live in the app-private `/usr/lib/Handy/` (on the binary's rpath), so no `ldconfig` step is needed.
+The existing `handy` Nix package/module option names remain for configuration compatibility; the installed program is `handy-cloud`. Dependencies include ONNX Runtime for VAD and GTK layer shell, not Vulkan. `bun install` regenerates Nix dependencies with pinned bun2nix 2.0.8; `bun run check:nix-deps` checks the lock digest without modifying files. The manual Nix workflow also regenerates the expression and compares it.
 
-After subsequent rebuilds, copy the binary and any refreshed runtime libraries:
+## Platform acceptance
 
-```bash
-sudo cp src-tauri/target/release/handy /usr/bin/
-sudo mkdir -p /usr/lib/Handy
-sudo cp -a src-tauri/transcribe-libs/. /usr/lib/Handy/
-```
-
-Resources only need re-copying if they change upstream (new icons, sounds, models, etc.).
-
-## Troubleshooting
-
-### AppImage build fails on Arch / rolling-release distros
-
-`linuxdeploy` bundles its own `strip` binary which is too old to process system libraries built with newer toolchains on rolling-release distros (Arch, CachyOS, Manjaro, EndeavourOS).
-
-The error from Tauri:
-
-```
-Bundling Handy_*_amd64.AppImage
-failed to bundle project `failed to run linuxdeploy`
-```
-
-Tauri swallows the real linuxdeploy error. To see it, run linuxdeploy manually:
-
-```bash
-cd src-tauri/target/release/bundle/appimage
-~/.cache/tauri/linuxdeploy-x86_64.AppImage --appimage-extract-and-run \
-  --appdir Handy.AppDir --plugin gtk --output appimage
-```
-
-**Workaround:** The binary, deb, and rpm bundles all build fine — only the AppImage step fails. To skip it:
-
-```bash
-bun run tauri build -- --bundles deb
-```
-
-Then install using the deb extraction method above.
-
-### Windows build fails with path-limit errors (`MSB3491` / `FTK1011` / `MSB6003`)
-
-On Windows the native build can fail partway through `transcribe-cpp-sys` with
-any of these (all the same root cause):
-
-```
-error MSB3491: Could not write lines to file "...VCTargetsPath.tlog\VCTargetsPath.lastbuildstate".
-Path: ... exceeds the OS max path limit. The fully qualified file name must be less than 260 characters.
-```
-
-```
-FileTracker : error FTK1011: could not create the new file tracking log file:
-...\vulkan-shaders-gen-build\...\cmTC_xxxxx.tlog\link.write.1.tlog.
-The system cannot find the path specified.
-```
-
-```
-error MSB6003: The specified task executable "CL.exe" could not be run.
-System.IO.DirectoryNotFoundException: Could not find a part of the path ...
-```
-
-This is **not** a code or toolchain problem — it's Windows' legacy 260-character
-path limit (`MAX_PATH`), overflowed by the Vulkan shader generator's nested
-CMake build tree on top of Cargo's already-deep
-`target\release\build\<crate>-<hash>\out\build\...` directory.
-
-Since `transcribe-cpp` 0.1.3 this is mitigated automatically: the native build
-compiles through a short NTFS junction under `%LOCALAPPDATA%\tcs` (created
-without admin rights), so a normal checkout builds with no setup. Enabling
-Windows long paths does **not** reliably help here — MSBuild's native
-`FileTracker` (`tracker.exe`) ignores the long-paths flag — which is why the
-junction, not the registry flag, is the fix.
-
-If you still see the errors above, junction creation was likely blocked
-(filesystem or corporate policy) — the failing build's log then contains a
-`transcribe-cpp-sys: could not create short build junction ...` warning — or
-your checkout is deep enough to overflow even the shortened layout. Work
-around either case with a short Cargo target directory:
-
-```powershell
-# Per-shell:
-$env:CARGO_TARGET_DIR = "C:\h"
-
-# Or persist it for all future terminals (note: redirects ALL your
-# Rust projects' build output, not just Handy):
-[Environment]::SetEnvironmentVariable('CARGO_TARGET_DIR', 'C:\h', 'User')
-```
-
-Artifacts then land in `C:\h\release\...` instead of the repo's
-`src-tauri\target\`. Open a **new terminal** if you persisted the variable —
-it is only picked up by freshly started processes. Then `bun run tauri dev`
-and `bun run tauri build` work normally.
-
-### Windows `tauri build` fails at bundling with `program not found`
-
-If the build compiles all the way to `Built application at: ...\handy.exe` and
-then fails with:
-
-```
-Signing C:\...\handy.exe with a custom signing command
-failed to bundle project `program not found`
-```
-
-that's the code-signing step: `tauri.conf.json` configures a custom
-`signCommand` (`trusted-signing-cli`, Azure Trusted Signing) that only exists
-in the release CI environment. Local development doesn't need it:
-
-```powershell
-# Development (no bundling/signing at all):
-bun run tauri dev
-
-# Or compile a release binary without the installer/signing step:
-bun run tauri build --no-bundle
-```
+Before publishing, verify Linux shortcuts, VAD, cloud cancellation, paste and screen context in a desktop session. Verify macOS accessibility/microphone/screen-recording permissions and paste, and Windows microphone/privacy and paste on real machines. A successful compiler or mock-browser run alone does not establish those behaviors. Record unavailable CI jobs (including GitHub billing restrictions) as **not run**, not passed.

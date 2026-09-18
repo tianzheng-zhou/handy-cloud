@@ -1,4 +1,5 @@
-import { commands, type Theme } from "@/bindings";
+import type { Theme } from "@/bindings";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 /**
  * Appearance theme handling.
@@ -53,10 +54,8 @@ export const getStoredTheme = (): Theme => {
 /** Apply the persisted theme from AppSettings (the source of truth). */
 export const syncThemeFromSettings = async (): Promise<void> => {
   try {
-    const result = await commands.getAppSettings();
-    if (result.status === "ok") {
-      applyTheme(result.data.theme ?? "system");
-    }
+    await useSettingsStore.getState().initialize();
+    applyTheme(useSettingsStore.getState().settings?.theme ?? "system");
   } catch (e) {
     console.warn("Failed to sync theme from settings:", e);
   }
