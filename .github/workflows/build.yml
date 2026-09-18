@@ -361,8 +361,8 @@ jobs:
             # Run under a virtual X server: handy initializes GTK on startup even
             # on the headless --list-devices path, which fails without a display.
             HANDY_NO_GTK_LAYER_SHELL=1 \
-            LD_LIBRARY_PATH="${root}/usr/lib/Handy:${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
-              xvfb-run -a "${root}/usr/bin/handy" --list-devices >/tmp/handy-package-smoke.log
+            LD_LIBRARY_PATH="${root}/usr/lib/Handy Cloud:${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+              xvfb-run -a "${root}/usr/bin/handy-cloud" --list-devices >/tmp/handy-package-smoke.log
             echo "${label} --list-devices smoke passed"
           }
 
@@ -371,9 +371,9 @@ jobs:
               echo "Auditing deb package: ${deb}"
               listing="$(mktemp)"
               dpkg-deb -c "$deb" > "$listing"
-              require_pattern "$listing" 'usr/bin/handy$' "handy binary"
+              require_pattern "$listing" 'usr/bin/handy-cloud$' "handy binary"
               # Handy's libs must stay out of the ldconfig-scanned /usr/lib
-              # (issue #1639): app-private libs belong in /usr/lib/Handy only.
+              # (issue #1639): app-private libs belong in /usr/lib/Handy Cloud only.
               # `[^/]+` excludes the Handy/ subdir, so only direct hits match.
               if grep -Eq 'usr/lib/[^/]+\.so' "$listing"; then
                 echo "ERROR: libraries installed directly into /usr/lib (issue #1639):" >&2
@@ -396,7 +396,7 @@ jobs:
               echo "Auditing rpm package: ${rpm_pkg}"
               listing="$(mktemp)"
               rpm -qpl "$rpm_pkg" > "$listing"
-              require_pattern "$listing" '/usr/bin/handy$' "handy binary"
+              require_pattern "$listing" '/usr/bin/handy-cloud$' "handy binary"
               # Same /usr/lib pollution guard as the deb audit (issue #1639).
               if grep -Eq 'usr/lib/[^/]+\.so' "$listing"; then
                 echo "ERROR: libraries installed directly into /usr/lib (issue #1639):" >&2
@@ -416,7 +416,7 @@ jobs:
               (
                 cd "$workdir"
                 ./Handy.AppImage --appimage-extract >/dev/null
-                require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
+                require_path "squashfs-root/usr/bin/handy-cloud" "AppImage handy binary"
                 smoke_binary "$(pwd)/squashfs-root" "AppImage"
               )
               rm -rf "$workdir"
@@ -451,9 +451,9 @@ jobs:
           function Assert-PackageContents {
             param([string]$Root, [string]$Label)
 
-            $handy = Get-ChildItem $Root -Filter "handy.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            $handy = Get-ChildItem $Root -Filter "handy-cloud.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
             if (-not $handy) {
-              throw "$Label package is missing handy.exe"
+              throw "$Label package is missing handy-cloud.exe"
             }
 
             $deviceOutput = (& $handy.FullName --list-devices | Out-String)

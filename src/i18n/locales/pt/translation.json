@@ -101,7 +101,7 @@
     },
     "permissions": {
       "title": "Permissões Necessárias",
-      "description": "O Handy precisa de algumas permissões para funcionar corretamente.",
+      "description": "O Handy Cloud precisa de algumas permissões para funcionar corretamente.",
       "microphone": {
         "title": "Acesso ao Microfone",
         "description": "Necessário para ouvir sua voz para transcrição."
@@ -161,7 +161,7 @@
     "general": {
       "title": "Geral",
       "shortcut": {
-        "title": "Atalhos do Handy",
+        "title": "Atalhos do Handy Cloud",
         "description": "Configure atalhos de teclado para iniciar a gravação de voz para texto",
         "loading": "Carregando atalhos...",
         "none": "Nenhum atalho configurado",
@@ -214,7 +214,7 @@
       "searchPlaceholder": "Buscar modelos por nome…",
       "rescan": {
         "label": "Reescanear",
-        "tooltip": "Reescaneia em busca de modelos adicionados à pasta de modelos ou ao cache do Hugging Face fora do Handy"
+        "tooltip": "Reescaneia em busca de modelos adicionados à pasta de modelos ou ao cache do Hugging Face fora do Handy Cloud"
       }
     },
     "sound": {
@@ -275,11 +275,11 @@
       },
       "autostart": {
         "label": "Iniciar na Inicialização",
-        "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador."
+        "description": "Iniciar automaticamente o Handy Cloud quando você fizer login no seu computador."
       },
       "showTrayIcon": {
         "label": "Mostrar ícone na bandeja",
-        "description": "Exibir o ícone do Handy na bandeja do sistema."
+        "description": "Exibir o ícone do Handy Cloud na bandeja do sistema."
       },
       "overlay": {
         "style": {
@@ -462,7 +462,7 @@
       },
       "updateChecks": {
         "label": "Verificar Atualizações",
-        "description": "Verificar automaticamente novas versões do Handy"
+        "description": "Verificar automaticamente novas versões do Handy Cloud"
       },
       "soundTheme": {
         "label": "Tema de Som",
@@ -535,7 +535,7 @@
       },
       "keyboardDiagnostic": {
         "title": "Diagnóstico do teclado",
-        "description": "Verifica se os eventos de teclado chegam ao Handy. Apenas a contagem de eventos é registrada — nunca quais teclas você pressiona.",
+        "description": "Verifica se os eventos de teclado chegam ao Handy Cloud. Apenas a contagem de eventos é registrada — nunca quais teclas você pressiona.",
         "run": "Executar diagnóstico de 10 s",
         "running": "Ouvindo… pressione seu atalho algumas vezes (ex.: Option+Space)",
         "secureInputLabel": "Secure Input",
@@ -549,7 +549,7 @@
         "mouse": "Mouse",
         "verdictBlocked": "O Secure Input está bloqueando os eventos de tecla — atalhos que incluem uma tecla normal não funcionam até que isso seja resolvido.",
         "verdictSuspicious": "Chegaram eventos de modificadores, mas nenhum evento de tecla — algo está suprimindo as teclas mesmo com o Secure Input indicando desativado. Por favor, relate isso no GitHub.",
-        "verdictOk": "Os eventos de tecla estão chegando normalmente ao Handy.",
+        "verdictOk": "Os eventos de tecla estão chegando normalmente ao Handy Cloud.",
         "verdictNoEvents": "Nenhum evento capturado — você pressionou alguma tecla durante o teste?",
         "failed": "Falha no diagnóstico: {{error}}"
       },
@@ -565,11 +565,11 @@
       "title": "Sobre",
       "version": {
         "title": "Versão",
-        "description": "Versão atual do Handy"
+        "description": "Versão atual do Handy Cloud"
       },
       "appDataDirectory": {
         "title": "Diretório de Dados do App",
-        "description": "Local onde o Handy armazena seus dados"
+        "description": "Local onde o Handy Cloud armazena seus dados"
       },
       "sourceCode": {
         "title": "Código Fonte",
@@ -577,8 +577,8 @@
         "button": "Ver no GitHub"
       },
       "supportDevelopment": {
-        "title": "Apoiar o Desenvolvimento",
-        "description": "Ajude-nos a continuar construindo o Handy",
+        "title": "Support the original Handy project",
+        "description": "Ajude-nos a continuar construindo o Handy Cloud",
         "button": "Doar"
       },
       "acknowledgments": {
@@ -586,12 +586,17 @@
         "ggml": {
           "title": "ggml",
           "description": "Inferência de alto desempenho do modelo de reconhecimento automático de fala Whisper da OpenAI",
-          "details": "O Handy usa ggml para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
+          "details": "O Handy Cloud usa ggml para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
+        },
+        "handy": {
+          "title": "Handy / cjpais",
+          "description": "Based on the original Handy project (MIT License).",
+          "details": "Handy Cloud retains the original project’s copyright and contributor credits."
         }
       },
       "whatsNewUpdates": {
         "label": "Mostrar novidades",
-        "description": "Mostrar notas de versão após atualizações do Handy"
+        "description": "Mostrar notas de versão após atualizações do Handy Cloud"
       }
     }
   },
@@ -618,7 +623,7 @@
     "noOptionsFound": "Nenhuma opção encontrada"
   },
   "accessibility": {
-    "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",
+    "permissionsDescription": "O Handy Cloud precisa de permissões de acessibilidade para digitar o texto transcrito.",
     "openSettings": "Abrir Configurações do Sistema"
   },
   "errors": {
@@ -641,11 +646,11 @@
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",
-    "description": "Alterar o idioma da interface do Handy"
+    "description": "Alterar o idioma da interface do Handy Cloud"
   },
   "theme": {
     "title": "Tema do aplicativo",
-    "description": "Escolha se o Handy segue o tema do sistema ou permanece claro ou escuro",
+    "description": "Escolha se o Handy Cloud segue o tema do sistema ou permanece claro ou escuro",
     "options": {
       "system": "Sistema",
       "light": "Claro",
@@ -657,7 +662,7 @@
     "processing": "Processando..."
   },
   "whatsNew": {
-    "title": "Novidades no Handy v{{version}}"
+    "title": "Novidades no Handy Cloud v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} pode estar bloqueando 1 atalho",
@@ -669,5 +674,14 @@
     "learnMore": "Como resolver isso",
     "recorderBlocked": "Não é possível gravar atalhos agora — o Secure Input do macOS está bloqueando os eventos de tecla. Resolva primeiro o aviso do Secure Input.",
     "dismiss": "Dispensar"
+  },
+  "app": {
+    "name": "Handy Cloud",
+    "cloud": "Cloud"
+  },
+  "updater": {
+    "manualDownload": "Download Handy Cloud",
+    "downloading": "Downloading…",
+    "downloadingCount": "Downloading {{count}} items…"
   }
 }

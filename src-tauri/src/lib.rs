@@ -11,6 +11,7 @@ mod helpers;
 mod input;
 mod llm_client;
 mod managers;
+mod migration;
 mod overlay;
 mod paste_tx;
 pub mod portable;
@@ -22,6 +23,7 @@ mod signal_handle;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
+mod updates;
 mod utils;
 
 pub use cli::CliArgs;
@@ -241,7 +243,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             }
             "check_updates" => {
                 let settings = settings::get_settings(app);
-                if settings.update_checks_enabled {
+                if settings.update_checks_enabled && updates::get_update_capability(app.clone()) {
                     show_main_window(app);
                     let _ = app.emit("check-for-updates", ());
                 }
@@ -545,6 +547,7 @@ pub fn run(cli_args: CliArgs) {
             commands::open_recordings_folder,
             commands::open_log_dir,
             commands::open_app_data_dir,
+            updates::get_update_capability,
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
@@ -588,6 +591,11 @@ pub fn run(cli_args: CliArgs) {
             "../src/bindings.ts",
         )
         .expect("Failed to export typescript bindings");
+
+    #[cfg(debug_assertions)]
+    if cli_args.export_bindings {
+        return;
+    }
 
     let invoke_handler = specta_builder.invoke_handler();
 
@@ -675,7 +683,6 @@ pub fn run(cli_args: CliArgs) {
     builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_macos_permissions::init())
@@ -688,6 +695,11 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            migration::import_legacy_data(app.handle())?;
+            if updates::get_update_capability(app.handle().clone()) {
+                app.handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+            }
             specta_builder.mount_events(app);
 
             // Headless one-shot path (`--transcribe-file` / `--list-models`):
@@ -709,7 +721,7 @@ pub fn run(cli_args: CliArgs) {
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
+                    .title("Handy Cloud")
                     .inner_size(680.0, 570.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)

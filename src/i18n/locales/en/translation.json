@@ -112,7 +112,7 @@
     },
     "permissions": {
       "title": "Permissions Required",
-      "description": "Handy needs a couple of permissions to work properly.",
+      "description": "Handy Cloud needs a couple of permissions to work properly.",
       "microphone": {
         "title": "Microphone Access",
         "description": "Required to hear your voice for transcription."
@@ -166,7 +166,17 @@
     }
   },
   "footer": {
-    "cloudAsrModel": "{{model}}"
+    "checkingUpdates": "Checking for updates...",
+    "updateAvailableShort": "Update available",
+    "upToDate": "Up to date",
+    "updateCheckingDisabled": "Update Checking Disabled",
+    "downloading": "Downloading... {{progress}}%",
+    "installing": "Installing...",
+    "preparing": "Preparing...",
+    "checkForUpdates": "Check for updates",
+    "portableUpdateTitle": "Manual update required",
+    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
+    "portableUpdateButton": "Open GitHub Releases"
   },
   "settings": {
     "cloudAsr": {
@@ -207,7 +217,7 @@
     "general": {
       "title": "General",
       "shortcut": {
-        "title": "Handy Shortcuts",
+        "title": "Handy Cloud Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
@@ -259,7 +269,7 @@
       },
       "rescan": {
         "label": "Rescan",
-        "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
+        "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy Cloud"
       },
       "noModelsMatch": "No models match this filter."
     },
@@ -321,11 +331,11 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start Handy Cloud when you log in to your computer."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
-        "description": "Display the Handy icon in the system tray."
+        "description": "Display the Handy Cloud icon in the system tray."
       },
       "overlay": {
         "style": {
@@ -417,11 +427,10 @@
       "screenContext": {
         "label": "Use screen as context",
         "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
-        "authorizeFailed": "Could not authorize screen capture. Keep Handy in front and allow the system dialog.",
+        "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
         "method": {
           "title": "Screen capture method",
-          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy focused and wait for authorization to finish before recording.",
-
+          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
           "options": {
             "screenshot": "Screenshot (may flash)",
             "screencast": "ScreenCast (silent)"
@@ -521,7 +530,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy"
+        "description": "Automatically check for new versions of Handy Cloud"
       },
       "whatsNewPreview": {
         "title": "Preview What's New",
@@ -601,7 +610,7 @@
       },
       "keyboardDiagnostic": {
         "title": "Keyboard Diagnostic",
-        "description": "Checks whether keyboard events reach Handy. Only event counts are recorded — never which keys you press.",
+        "description": "Checks whether keyboard events reach Handy Cloud. Only event counts are recorded — never which keys you press.",
         "run": "Run 10s diagnostic",
         "running": "Listening… press your shortcut a few times (e.g. Option+Space)",
         "secureInputLabel": "Secure Input",
@@ -615,7 +624,7 @@
         "mouse": "Mouse",
         "verdictBlocked": "Secure Input is blocking key events — keyed shortcuts cannot work until it is resolved.",
         "verdictSuspicious": "Modifier events arrived but no key events — something is suppressing keys even though Secure Input reports disabled. Please report this on GitHub.",
-        "verdictOk": "Key events are reaching Handy normally.",
+        "verdictOk": "Key events are reaching Handy Cloud normally.",
         "verdictNoEvents": "No events captured — did you press any keys during the test?",
         "failed": "Diagnostic failed: {{error}}"
       }
@@ -624,15 +633,15 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy"
+        "description": "Current version of Handy Cloud"
       },
       "whatsNewUpdates": {
         "label": "Show What's New",
-        "description": "Show release notes after Handy updates"
+        "description": "Show release notes after Handy Cloud updates"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
-        "description": "Location where Handy stores its data"
+        "description": "Location where Handy Cloud stores its data"
       },
       "sourceCode": {
         "title": "Source Code",
@@ -640,8 +649,8 @@
         "button": "View on GitHub"
       },
       "supportDevelopment": {
-        "title": "Support Development",
-        "description": "Help us continue building Handy",
+        "title": "Support the original Handy project",
+        "description": "Help us continue building Handy Cloud",
         "button": "Donate"
       },
       "acknowledgments": {
@@ -649,26 +658,18 @@
         "ggml": {
           "title": "ggml",
           "description": "High-performance tensor library for on-device machine learning inference",
-          "details": "Handy uses Alibaba Bailian (DashScope) Qwen3.5-Omni for cloud speech recognition, with Silero VAD for local voice activity detection."
+          "details": "Handy Cloud uses Alibaba Bailian (DashScope) Qwen3.5-Omni for cloud speech recognition, with Silero VAD for local voice activity detection."
+        },
+        "handy": {
+          "title": "Handy / cjpais",
+          "description": "Based on the original Handy project (MIT License).",
+          "details": "Handy Cloud retains the original project’s copyright and contributor credits."
         }
       }
     }
   },
-  "footer": {
-    "checkingUpdates": "Checking for updates...",
-    "updateAvailableShort": "Update available",
-    "upToDate": "Up to date",
-    "updateCheckingDisabled": "Update Checking Disabled",
-    "downloading": "Downloading... {{progress}}%",
-    "installing": "Installing...",
-    "preparing": "Preparing...",
-    "checkForUpdates": "Check for updates",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
-  },
   "whatsNew": {
-    "title": "New in Handy v{{version}}"
+    "title": "New in Handy Cloud v{{version}}"
   },
   "common": {
     "loading": "Loading...",
@@ -680,7 +681,7 @@
     "noOptionsFound": "No options found"
   },
   "accessibility": {
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
+    "permissionsDescription": "Handy Cloud needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings"
   },
   "errors": {
@@ -703,11 +704,11 @@
   },
   "appLanguage": {
     "title": "Application Language",
-    "description": "Change the language of the Handy interface"
+    "description": "Change the language of the Handy Cloud interface"
   },
   "theme": {
     "title": "Application Theme",
-    "description": "Choose whether Handy follows your system theme or stays light or dark",
+    "description": "Choose whether Handy Cloud follows your system theme or stays light or dark",
     "options": {
       "system": "System",
       "light": "Light",
@@ -728,5 +729,14 @@
     "learnMore": "How to fix",
     "recorderBlocked": "Can't record shortcuts right now — macOS Secure Input is blocking key events. Resolve the Secure Input warning first.",
     "dismiss": "Dismiss"
+  },
+  "app": {
+    "name": "Handy Cloud",
+    "cloud": "Cloud"
+  },
+  "updater": {
+    "manualDownload": "Download Handy Cloud",
+    "downloading": "Downloading…",
+    "downloadingCount": "Downloading {{count}} items…"
   }
 }

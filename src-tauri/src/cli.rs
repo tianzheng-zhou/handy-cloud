@@ -2,8 +2,12 @@ use clap::Parser;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug, Clone, Default)]
-#[command(name = "handy", about = "Handy - Speech to Text")]
+#[command(name = "handy-cloud", about = "Handy Cloud - Speech to Text")]
 pub struct CliArgs {
+    /// Export frontend bindings without starting the application (development only).
+    #[cfg(debug_assertions)]
+    #[arg(long, hide = true)]
+    pub export_bindings: bool,
     /// Start with the main window hidden
     #[arg(long)]
     pub start_hidden: bool,

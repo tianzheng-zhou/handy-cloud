@@ -173,9 +173,9 @@ pub fn tray_tooltip() -> String {
 
 fn version_label() -> String {
     if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+        format!("Handy Cloud v{} (Dev)", env!("CARGO_PKG_VERSION"))
     } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+        format!("Handy Cloud v{}", env!("CARGO_PKG_VERSION"))
     }
 }
 
@@ -222,7 +222,7 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
         app,
         "check_updates",
         &strings.check_updates,
-        settings.update_checks_enabled,
+        settings.update_checks_enabled && crate::updates::get_update_capability(app.clone()),
         None::<&str>,
     )
     .expect("failed to create check updates item");

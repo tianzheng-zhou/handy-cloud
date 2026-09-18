@@ -113,9 +113,7 @@ const RecordingOverlay: React.FC = () => {
   );
 
   const working =
-    state === "transcribing" ||
-    state === "processing" ||
-    state === "streaming";
+    state === "transcribing" || state === "processing" || state === "streaming";
   const workLabel =
     state === "processing"
       ? t("overlay.processing")

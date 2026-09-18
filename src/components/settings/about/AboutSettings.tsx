@@ -22,7 +22,7 @@ export const AboutSettings: React.FC = () => {
         setVersion(appVersion);
       } catch (error) {
         console.error("Failed to get app version:", error);
-        setVersion("0.1.2");
+        setVersion("");
       }
     };
 
@@ -71,7 +71,9 @@ export const AboutSettings: React.FC = () => {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+            onClick={() =>
+              openUrl("https://github.com/tianzheng-zhou/handy-cloud")
+            }
           >
             {t("settings.about.sourceCode.button")}
           </Button>
@@ -83,13 +85,13 @@ export const AboutSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.about.acknowledgments.title")}>
         <SettingContainer
-          title={t("settings.about.acknowledgments.ggml.title")}
-          description={t("settings.about.acknowledgments.ggml.description")}
+          title={t("settings.about.acknowledgments.handy.title")}
+          description={t("settings.about.acknowledgments.handy.description")}
           grouped={true}
           layout="stacked"
         >
           <div className="text-sm text-mid-gray">
-            {t("settings.about.acknowledgments.ggml.details")}
+            {t("settings.about.acknowledgments.handy.details")}
           </div>
         </SettingContainer>
       </SettingsGroup>

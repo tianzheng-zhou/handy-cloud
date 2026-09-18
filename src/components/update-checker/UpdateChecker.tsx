@@ -7,6 +7,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { ProgressBar } from "../shared";
 import { useSettings } from "../../hooks/useSettings";
 import { commands } from "../../bindings";
+import { useUpdateCapability } from "../../hooks/useUpdateCapability";
 
 interface UpdateCheckerProps {
   className?: string;
@@ -14,6 +15,7 @@ interface UpdateCheckerProps {
 
 const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const { t } = useTranslation();
+  const updateCapability = useUpdateCapability();
   // Update checking state
   const [isChecking, setIsChecking] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -25,7 +27,8 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
 
   const { settings, isLoading } = useSettings();
   const settingsLoaded = !isLoading && settings !== null;
-  const updateChecksEnabled = settings?.update_checks_enabled ?? false;
+  const updateChecksEnabled =
+    updateCapability && (settings?.update_checks_enabled ?? false);
 
   const upToDateTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isManualCheckRef = useRef(false);
@@ -182,6 +185,19 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const isUpdateClickable =
     !isUpdateDisabled && (updateAvailable || (!isChecking && !showUpToDate));
 
+  if (!updateCapability) {
+    return (
+      <button
+        className={className}
+        onClick={() =>
+          void openUrl("https://github.com/tianzheng-zhou/handy-cloud/releases")
+        }
+      >
+        {t("updater.manualDownload")}
+      </button>
+    );
+  }
+
   return (
     <>
       {showPortableUpdateDialog && (
@@ -203,7 +219,9 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
               <button
                 className="px-3 py-1.5 text-sm rounded bg-logo-primary text-white hover:bg-logo-primary/80 transition-colors"
                 onClick={() => {
-                  openUrl("https://github.com/cjpais/Handy/releases/latest");
+                  openUrl(
+                    "https://github.com/tianzheng-zhou/handy-cloud/releases/latest",
+                  );
                   setShowPortableUpdateDialog(false);
                 }}
               >
