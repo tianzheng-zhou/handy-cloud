@@ -39,7 +39,8 @@ static PORTAL_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 /// Drop stale authorize results when the user switches methods quickly.
 static AUTHORIZE_GENERATION: AtomicU64 = AtomicU64::new(0);
 /// Last successful hotkey/authorize JPEG — emergency fallback only.
-static LAST_JPEG: Lazy<Mutex<Option<(Instant, Vec<u8>)>>> = Lazy::new(|| Mutex::new(None));
+type CapturedFrame = Option<(Instant, Vec<u8>)>;
+static LAST_JPEG: Lazy<Mutex<CapturedFrame>> = Lazy::new(|| Mutex::new(None));
 const LAST_JPEG_MAX_AGE: Duration = Duration::from_secs(45);
 
 enum PendingCapture {
@@ -249,9 +250,12 @@ pub fn kickoff_authorize(app: &AppHandle, kind: AuthorizeKind) {
                     #[cfg(not(target_os = "linux"))]
                     let keep_enabled = false;
                     if enabled && !keep_enabled {
-                        crate::settings::update_settings(&app, |s| {
+                        if let Err(error) = crate::settings::update_settings(&app, |s| {
                             s.cloud_asr_screen_context = false;
-                        });
+                            Ok(())
+                        }) {
+                            warn!("Could not persist screen context state: {error}");
+                        }
                     }
                 }
             }
@@ -281,11 +285,12 @@ fn authorize_capture_on_worker(app: &AppHandle) -> Result<usize, String> {
 }
 
 /// Clear persisted ScreenCast restore token (e.g. when disabling the setting).
-pub fn clear_restore_token(app: &AppHandle) {
+pub fn clear_restore_token(app: &AppHandle) -> Result<(), String> {
     if crate::settings::get_screencast_restore_token(app).is_some() {
-        crate::settings::set_screencast_restore_token(app, None);
+        crate::settings::set_screencast_restore_token(app, None)?;
         debug!("Cleared ScreenCast restore token");
     }
+    Ok(())
 }
 
 fn focus_main_window(app: &AppHandle) {
@@ -430,7 +435,10 @@ fn persist_restore_token(app: &AppHandle, token: Option<String>) {
     };
     let previous = crate::settings::get_screencast_restore_token(app);
     if previous.as_deref() != Some(token.as_str()) {
-        crate::settings::set_screencast_restore_token(app, Some(token));
+        if let Err(error) = crate::settings::set_screencast_restore_token(app, Some(token)) {
+            warn!("Could not save ScreenCast restore token: {error}");
+            return;
+        }
         info!("Saved ScreenCast restore token for silent re-capture");
     }
 }

@@ -37,7 +37,8 @@ pub fn change_cloud_asr_api_key(app: AppHandle, api_key: String) -> Result<(), S
         if !settings.cloud_asr_api_key.trim().is_empty() {
             settings.onboarding_completed = true;
         }
-    });
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -51,7 +52,8 @@ pub fn change_cloud_asr_base_url(app: AppHandle, base_url: String) -> Result<(),
         } else {
             trimmed
         };
-    });
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -67,7 +69,8 @@ pub fn change_cloud_asr_model(app: AppHandle, model: String) -> Result<(), Strin
     }
     update_settings(&app, |settings| {
         settings.cloud_asr_model = model;
-    });
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -75,10 +78,11 @@ pub fn change_cloud_asr_model(app: AppHandle, model: String) -> Result<(), Strin
 #[specta::specta]
 pub fn change_cloud_asr_screen_context(app: AppHandle, enabled: bool) -> Result<(), String> {
     if !enabled {
-        crate::screen_context::clear_restore_token(&app);
+        crate::screen_context::clear_restore_token(&app)?;
         update_settings(&app, |settings| {
             settings.cloud_asr_screen_context = false;
-        });
+            Ok(())
+        })?;
         return Ok(());
     }
 
@@ -86,7 +90,8 @@ pub fn change_cloud_asr_screen_context(app: AppHandle, enabled: bool) -> Result<
     // and the GTK/Wayland main loop can show the portal dialog.
     update_settings(&app, |settings| {
         settings.cloud_asr_screen_context = true;
-    });
+        Ok(())
+    })?;
     crate::screen_context::kickoff_authorize(&app, AuthorizeKind::Enable);
     Ok(())
 }
@@ -113,8 +118,8 @@ pub fn change_cloud_asr_screen_capture_method(
     // capture then fell back to audio-only.
     let screen_context_on = update_settings(&app, |settings| {
         settings.cloud_asr_screen_capture_method = parsed;
-        settings.cloud_asr_screen_context
-    });
+        Ok(settings.cloud_asr_screen_context)
+    })?;
 
     if screen_context_on {
         crate::screen_context::kickoff_authorize(&app, AuthorizeKind::MethodChange);

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use hound::{WavReader, WavSpec, WavWriter};
 use log::debug;
+use std::io::Cursor;
 use std::path::Path;
 
 /// Read a WAV file and return normalised f32 samples.
@@ -29,6 +30,13 @@ pub fn verify_wav_file<P: AsRef<Path>>(file_path: P, expected_samples: usize) ->
 
 /// Save audio samples as a WAV file
 pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()> {
+    std::fs::write(file_path.as_ref(), encode_wav(samples)?)?;
+    debug!("Saved WAV file: {:?}", file_path.as_ref());
+    Ok(())
+}
+
+/// Encode a mono 16 kHz recording once for both upload and persistence.
+pub fn encode_wav(samples: &[f32]) -> Result<Vec<u8>> {
     let spec = WavSpec {
         channels: 1,
         sample_rate: 16000,
@@ -36,7 +44,8 @@ pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()
         sample_format: hound::SampleFormat::Int,
     };
 
-    let mut writer = WavWriter::create(file_path.as_ref(), spec)?;
+    let mut bytes = Cursor::new(Vec::with_capacity(samples.len() * 2 + 44));
+    let mut writer = WavWriter::new(&mut bytes, spec)?;
 
     // Convert f32 samples to i16 for WAV
     for sample in samples {
@@ -45,6 +54,24 @@ pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()
     }
 
     writer.finalize()?;
-    debug!("Saved WAV file: {:?}", file_path.as_ref());
-    Ok(())
+    Ok(bytes.into_inner())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encoded_audio_and_saved_audio_are_identical() {
+        let samples = [-1.0, -0.5, 0.0, 0.5, 1.0];
+        let encoded = encode_wav(&samples).unwrap();
+        let reader = WavReader::new(Cursor::new(&encoded)).unwrap();
+        assert_eq!(reader.spec().sample_rate, 16000);
+        assert_eq!(reader.spec().channels, 1);
+        assert_eq!(reader.len(), samples.len() as u32);
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("recording.wav");
+        save_wav_file(&path, &samples).unwrap();
+        assert_eq!(std::fs::read(path).unwrap(), encoded);
+    }
 }

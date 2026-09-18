@@ -89,7 +89,10 @@ fn is_blank_transcription(transcription: &str) -> bool {
     transcription.trim().is_empty()
 }
 
-async fn complete_unless_cancelled<F, C>(operation: F, is_cancelled: C) -> Option<F::Output>
+pub(crate) async fn complete_unless_cancelled<F, C>(
+    operation: F,
+    is_cancelled: C,
+) -> Option<F::Output>
 where
     F: Future,
     C: Fn() -> bool,
@@ -482,7 +485,7 @@ impl ShortcutAction for TranscribeAction {
 
         let overlay_started = Instant::now();
         match settings.overlay_style {
-            OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
+            OverlayStyle::Minimal => show_recording_overlay(app),
             OverlayStyle::None => {}
         }
         debug!(
@@ -596,7 +599,7 @@ impl ShortcutAction for TranscribeAction {
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
-            let _guard = FinishGuard(ah.clone());
+            let guard = FinishGuard(ah.clone());
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
@@ -622,40 +625,34 @@ impl ShortcutAction for TranscribeAction {
                     utils::hide_recording_overlay(&ah);
                     change_tray_icon(&ah, TrayIconState::Idle);
                 } else {
-                    let sample_count = samples.len();
-                    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+                    let file_name = format!(
+                        "handy-cloud-{}.wav",
+                        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+                    );
                     let wav_path = hm.recordings_dir().join(&file_name);
-                    let wav_path_for_verify = wav_path.clone();
-                    let samples_for_wav = samples.clone();
-                    let wav_handle = tauri::async_runtime::spawn_blocking(move || {
-                        crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
-                    });
-
-                    let transcription_time = Instant::now();
-
-                    // Await WAV save first — cloud ASR uploads the file bytes.
-                    let wav_saved = match wav_handle.await {
-                        Ok(Ok(())) => {
-                            match crate::audio_toolkit::verify_wav_file(
-                                &wav_path_for_verify,
-                                sample_count,
-                            ) {
-                                Ok(()) => true,
-                                Err(e) => {
-                                    error!("WAV verification failed: {}", e);
-                                    false
-                                }
-                            }
-                        }
-                        Ok(Err(e)) => {
-                            error!("Failed to save WAV file: {}", e);
-                            false
-                        }
-                        Err(e) => {
-                            error!("WAV save task panicked: {}", e);
-                            false
+                    let prepared = tauri::async_runtime::spawn_blocking(move || {
+                        let bytes = crate::audio_toolkit::encode_wav(&samples)?;
+                        let saved = std::fs::write(&wav_path, &bytes);
+                        Ok::<_, anyhow::Error>((bytes, saved))
+                    })
+                    .await;
+                    let (wav_bytes, saved) = match prepared {
+                        Ok(Ok(audio)) => audio,
+                        other => {
+                            error!("Failed to encode recorded audio: {other:?}");
+                            let _ =
+                                ah.emit("transcription-error", "Failed to encode recorded audio");
+                            utils::hide_recording_overlay(&ah);
+                            change_tray_icon(&ah, TrayIconState::Idle);
+                            return;
                         }
                     };
+                    let wav_saved = saved.is_ok();
+                    if let Err(error) = saved {
+                        warn!("Audio history could not be saved: {error}");
+                        let _ = ah.emit("recording-save-error", ());
+                    }
+                    let transcription_time = Instant::now();
 
                     if rm.was_cancelled_since(cancel_generation) {
                         debug!("Transcription operation cancelled before output handling");
@@ -686,32 +683,23 @@ impl ShortcutAction for TranscribeAction {
                     };
                     let screen_jpeg_ref = screen_jpeg.as_deref();
 
-                    let transcription_result = if wav_saved {
-                        dashscope_omni::transcribe_wav_file(
+                    let Some(transcription_result) = complete_unless_cancelled(
+                        dashscope_omni::transcribe_wav(
                             &settings.cloud_asr_api_key,
                             &settings.cloud_asr_base_url,
                             &settings.cloud_asr_model,
-                            &wav_path_for_verify,
+                            &wav_bytes,
                             language_hint,
                             screen_jpeg_ref,
-                        )
-                        .await
-                    } else {
-                        // Fallback: encode samples to a temp WAV in memory via the same path
-                        match crate::audio_toolkit::save_wav_file(&wav_path_for_verify, &samples) {
-                            Ok(()) => {
-                                dashscope_omni::transcribe_wav_file(
-                                    &settings.cloud_asr_api_key,
-                                    &settings.cloud_asr_base_url,
-                                    &settings.cloud_asr_model,
-                                    &wav_path_for_verify,
-                                    language_hint,
-                                    screen_jpeg_ref,
-                                )
-                                .await
-                            }
-                            Err(e) => Err(format!("Failed to prepare WAV for cloud ASR: {e}")),
-                        }
+                        ),
+                        || rm.was_cancelled_since(cancel_generation),
+                    )
+                    .await
+                    else {
+                        debug!("Cloud ASR request cancelled");
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
                     };
 
                     if rm.was_cancelled_since(cancel_generation) {
@@ -773,6 +761,7 @@ impl ShortcutAction for TranscribeAction {
                                 let final_text = processed.final_text;
                                 let rm_for_paste = Arc::clone(&rm);
                                 ah.run_on_main_thread(move || {
+                                    let _guard = guard;
                                     if rm_for_paste.was_cancelled_since(cancel_generation) {
                                         debug!("Transcription operation cancelled before paste");
                                         utils::hide_recording_overlay(&ah_clone);

@@ -2,7 +2,7 @@ pub mod audio;
 pub mod cloud_asr;
 pub mod history;
 
-use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
+use crate::settings::{AppSettings, LogLevel};
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
@@ -31,7 +31,7 @@ pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
-    Ok(get_settings(&app))
+    crate::settings::try_get_settings(&app)
 }
 
 #[tauri::command]
@@ -60,9 +60,10 @@ pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
         std::sync::atomic::Ordering::Relaxed,
     );
 
-    let mut settings = get_settings(&app);
-    settings.log_level = level;
-    write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.log_level = level;
+        Ok(())
+    })?;
 
     Ok(())
 }

@@ -2,7 +2,6 @@ use anyhow::Result;
 
 pub const VAD_PREFILL_FRAMES: usize = 15;
 pub const VAD_OFFLINE_HANGOVER_FRAMES: usize = 15;
-pub const VAD_STREAMING_HANGOVER_FRAMES: usize = 55;
 pub const VAD_ONSET_FRAMES: usize = 2;
 
 pub enum VadFrame<'a> {

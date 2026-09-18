@@ -655,7 +655,9 @@
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "粘贴文本失败",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
-    "transcriptionFailedTitle": "转录失败"
+    "transcriptionFailedTitle": "转录失败",
+    "recordingSaveFailed": "录音未能保存到历史记录，转写将继续。",
+    "settingsSaveFailed": "设置保存失败，请重试。"
   },
   "appLanguage": {
     "title": "应用语言",

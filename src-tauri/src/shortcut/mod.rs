@@ -46,9 +46,13 @@ pub fn init_shortcuts(app: &AppHandle) {
                 warn!("Falling back to Tauri global shortcut implementation and saving fallback to settings");
 
                 // Update settings to persist the fallback so we don't retry HandyKeys on next launch
-                let mut settings = settings::get_settings(app);
-                settings.keyboard_implementation = KeyboardImplementation::Tauri;
-                settings::write_settings(app, settings);
+
+                if let Err(error) = crate::settings::update_settings(app, |settings| {
+                    settings.keyboard_implementation = KeyboardImplementation::Tauri;
+                    Ok(())
+                }) {
+                    warn!("Could not persist keyboard fallback: {error}");
+                }
 
                 tauri_impl::init_shortcuts(app);
             }
@@ -121,7 +125,7 @@ pub fn change_binding(
         return Err("Binding cannot be empty".to_string());
     }
 
-    let mut settings = settings::get_settings(&app);
+    let settings = settings::get_settings(&app);
 
     // Get the binding to modify, or create it from defaults if it doesn't exist
     let binding_to_modify = match settings.bindings.get(&id) {
@@ -155,8 +159,10 @@ pub fn change_binding(
     if id == "cancel" {
         if let Some(mut b) = settings.bindings.get(&id).cloned() {
             b.current_binding = binding;
-            settings.bindings.insert(id.clone(), b.clone());
-            settings::write_settings(&app, settings);
+            settings::update_settings(&app, |settings| {
+                settings.bindings.insert(id.clone(), b.clone());
+                Ok(())
+            })?;
             crate::secure_input::reconcile_fallback(&app);
             return Ok(BindingResponse {
                 success: true,
@@ -197,10 +203,16 @@ pub fn change_binding(
     }
 
     // Update the binding in the settings
-    settings.bindings.insert(id, updated_binding.clone());
 
     // Save the settings and synchronize any active Secure Input shadows.
-    settings::write_settings(&app, settings);
+    if let Err(error) = settings::update_settings(&app, |settings| {
+        settings.bindings.insert(id, updated_binding.clone());
+        Ok(())
+    }) {
+        let _ = unregister_shortcut(&app, updated_binding.clone());
+        restore_registration(&app, &binding_to_modify);
+        return Err(error);
+    }
     crate::secure_input::reconcile_fallback(&app);
 
     // Return the updated binding
@@ -321,13 +333,13 @@ pub fn change_keyboard_implementation_setting(
         current_impl, new_impl
     );
 
-    // Unregister all shortcuts from the current implementation
-    unregister_all_shortcuts(&app, current_impl);
+    crate::settings::update_settings(&app, |settings| {
+        settings.keyboard_implementation = new_impl;
+        Ok(())
+    })?;
 
-    // Update the setting
-    let mut settings = settings::get_settings(&app);
-    settings.keyboard_implementation = new_impl;
-    settings::write_settings(&app, settings);
+    // Persistence succeeded; external operations must not hold the settings lock.
+    unregister_all_shortcuts(&app, current_impl);
 
     // Carbon fallback registrations use the Tauri plugin. Remove them before
     // registering the full Tauri implementation to avoid duplicate conflicts.
@@ -346,7 +358,7 @@ pub fn change_keyboard_implementation_setting(
     }
 
     // Register all shortcuts with new implementation, resetting invalid ones
-    let reset_bindings = register_all_shortcuts_for_implementation(&app, new_impl);
+    let reset_bindings = register_all_shortcuts_for_implementation(&app, new_impl)?;
     crate::secure_input::reconcile_fallback(&app);
 
     // Emit event to notify frontend of the change
@@ -436,7 +448,7 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
 fn register_all_shortcuts_for_implementation(
     app: &AppHandle,
     implementation: KeyboardImplementation,
-) -> Vec<String> {
+) -> Result<Vec<String>, String> {
     let mut reset_bindings = Vec::new();
     let default_bindings = settings::get_default_settings().bindings;
     let mut current_settings = settings::get_settings(app);
@@ -491,10 +503,17 @@ fn register_all_shortcuts_for_implementation(
 
     // Save settings if any bindings were reset
     if !reset_bindings.is_empty() {
-        settings::write_settings(app, current_settings);
+        settings::update_settings(app, |settings| {
+            for id in &reset_bindings {
+                if let Some(binding) = current_settings.bindings.get(id) {
+                    settings.bindings.insert(id.clone(), binding.clone());
+                }
+            }
+            Ok(())
+        })?;
     }
 
-    reset_bindings
+    Ok(reset_bindings)
 }
 
 /// Initialize HandyKeys if not already initialized, with rollback on failure
@@ -506,9 +525,11 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
     if let Err(e) = handy_keys::init_shortcuts(app) {
         error!("Failed to initialize HandyKeys: {}", e);
         // Rollback to Tauri
-        let mut settings = settings::get_settings(app);
-        settings.keyboard_implementation = KeyboardImplementation::Tauri;
-        settings::write_settings(app, settings);
+
+        crate::settings::update_settings(app, |settings| {
+            settings.keyboard_implementation = KeyboardImplementation::Tauri;
+            Ok(())
+        })?;
         crate::secure_input::reconcile_fallback(app);
         tauri_impl::init_shortcuts(app);
         return Err(format!(
@@ -528,34 +549,36 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 #[tauri::command]
 #[specta::specta]
 pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.push_to_talk = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.push_to_talk = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_audio_feedback_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.audio_feedback = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.audio_feedback = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_audio_feedback_volume_setting(app: AppHandle, volume: f32) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.audio_feedback_volume = volume;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.audio_feedback_volume = volume;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match theme.as_str() {
         "marimba" => SoundTheme::Marimba,
         "pop" => SoundTheme::Pop,
@@ -565,15 +588,16 @@ pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), S
             SoundTheme::Marimba
         }
     };
-    settings.sound_theme = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.sound_theme = parsed;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match theme.as_str() {
         "system" => Theme::System,
         "light" => Theme::Light,
@@ -583,8 +607,10 @@ pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String>
             Theme::System
         }
     };
-    settings.theme = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.theme = parsed;
+        Ok(())
+    })?;
     #[cfg(target_os = "windows")]
     apply_window_theme(&app, parsed);
     Ok(())
@@ -611,25 +637,26 @@ pub fn apply_window_theme(app: &AppHandle, theme: Theme) {
 #[tauri::command]
 #[specta::specta]
 pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.translate_to_english = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.translate_to_english = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.selected_language = language;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.selected_language = language;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
         // "none" is retired (visibility is overlay_style now); fold legacy callers
         // onto Bottom rather than warn.
@@ -640,8 +667,10 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
             OverlayPosition::Bottom
         }
     };
-    settings.overlay_position = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.overlay_position = parsed;
+        Ok(())
+    })?;
 
     // Whether the overlay shows at all is owned by overlay_style now; position
     // only ever toggles Top/Bottom, so the enabled cache is untouched here.
@@ -654,18 +683,18 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
 #[tauri::command]
 #[specta::specta]
 pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match style.as_str() {
         "none" => OverlayStyle::None,
         "minimal" => OverlayStyle::Minimal,
-        "live" => OverlayStyle::Live,
         other => {
             warn!("Invalid overlay style '{}', defaulting to minimal", other);
             OverlayStyle::Minimal
         }
     };
-    settings.overlay_style = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.overlay_style = parsed;
+        Ok(())
+    })?;
 
     // Keep the cached overlay-enabled flag in sync so emit_levels stops (or
     // resumes) emitting on the next audio callback.
@@ -680,9 +709,10 @@ pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(),
 #[tauri::command]
 #[specta::specta]
 pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.debug_mode = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.debug_mode = enabled;
+        Ok(())
+    })?;
 
     // Keep webview log streaming in sync: the live log viewer only exists in
     // debug mode, so logs are forwarded to the frontend only while it is on.
@@ -703,9 +733,10 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
 #[tauri::command]
 #[specta::specta]
 pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.start_hidden = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.start_hidden = enabled;
+        Ok(())
+    })?;
 
     // Notify frontend
     let _ = app.emit(
@@ -722,16 +753,25 @@ pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), 
 #[tauri::command]
 #[specta::specta]
 pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.autostart_enabled = enabled;
-    settings::write_settings(&app, settings);
+    let previous = crate::settings::update_settings(&app, |settings| {
+        let previous = settings.autostart_enabled;
+        settings.autostart_enabled = enabled;
+        Ok(previous)
+    })?;
 
-    // Apply the autostart setting immediately
+    // Apply outside the settings lock and restore only this field on failure.
     let autostart_manager = app.autolaunch();
-    if enabled {
-        let _ = autostart_manager.enable();
+    let applied = if enabled {
+        autostart_manager.enable()
     } else {
-        let _ = autostart_manager.disable();
+        autostart_manager.disable()
+    };
+    if let Err(error) = applied {
+        crate::settings::update_settings(&app, |settings| {
+            settings.autostart_enabled = previous;
+            Ok(())
+        })?;
+        return Err(format!("Failed to configure autostart: {error}"));
     }
 
     // Notify frontend
@@ -749,9 +789,10 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
 #[tauri::command]
 #[specta::specta]
 pub fn change_update_checks_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.update_checks_enabled = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.update_checks_enabled = enabled;
+        Ok(())
+    })?;
 
     let _ = app.emit(
         "settings-changed",
@@ -770,9 +811,10 @@ pub fn change_show_whats_new_on_update_setting(
     app: AppHandle,
     enabled: bool,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.show_whats_new_on_update = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.show_whats_new_on_update = enabled;
+        Ok(())
+    })?;
 
     let _ = app.emit(
         "settings-changed",
@@ -792,9 +834,11 @@ pub fn change_whats_new_last_seen_version_setting(
     version: String,
 ) -> Result<(), String> {
     let version = version.trim().to_string();
-    let mut settings = settings::get_settings(&app);
-    settings.whats_new_last_seen_version = version.clone();
-    settings::write_settings(&app, settings);
+
+    crate::settings::update_settings(&app, |settings| {
+        settings.whats_new_last_seen_version = version.clone();
+        Ok(())
+    })?;
 
     let _ = app.emit(
         "settings-changed",
@@ -810,9 +854,10 @@ pub fn change_whats_new_last_seen_version_setting(
 #[tauri::command]
 #[specta::specta]
 pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.custom_words = words;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.custom_words = words;
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -822,52 +867,56 @@ pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.word_correction_threshold = threshold;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.word_correction_threshold = threshold;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_extra_recording_buffer_setting(app: AppHandle, ms: u64) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.extra_recording_buffer_ms = ms;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.extra_recording_buffer_ms = ms;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.paste_delay_ms = ms;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.paste_delay_ms = ms;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_paste_delay_after_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.paste_delay_after_ms = ms;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.paste_delay_after_ms = ms;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_reliable_paste_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.reliable_paste = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.reliable_paste = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match method.as_str() {
         "ctrl_v" => PasteMethod::CtrlV,
         "direct" => PasteMethod::Direct,
@@ -880,8 +929,10 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
             PasteMethod::CtrlV
         }
     };
-    settings.paste_method = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.paste_method = parsed;
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -901,7 +952,6 @@ pub fn get_available_typing_tools() -> Vec<String> {
 #[tauri::command]
 #[specta::specta]
 pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match tool.as_str() {
         "auto" => TypingTool::Auto,
         "wtype" => TypingTool::Wtype,
@@ -914,8 +964,10 @@ pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), St
             TypingTool::Auto
         }
     };
-    settings.typing_tool = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.typing_tool = parsed;
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -925,16 +977,16 @@ pub fn change_external_script_path_setting(
     app: AppHandle,
     path: Option<String>,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.external_script_path = path;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.external_script_path = path;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match handling.as_str() {
         "dont_modify" => ClipboardHandling::DontModify,
         "copy_to_clipboard" => ClipboardHandling::CopyToClipboard,
@@ -946,24 +998,26 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
             ClipboardHandling::DontModify
         }
     };
-    settings.clipboard_handling = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.clipboard_handling = parsed;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_auto_submit_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.auto_submit = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.auto_submit = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_auto_submit_key_setting(app: AppHandle, key: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
     let parsed = match key.as_str() {
         "enter" => AutoSubmitKey::Enter,
         "ctrl_enter" => AutoSubmitKey::CtrlEnter,
@@ -973,18 +1027,22 @@ pub fn change_auto_submit_key_setting(app: AppHandle, key: String) -> Result<(),
             AutoSubmitKey::Enter
         }
     };
-    settings.auto_submit_key = parsed;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.auto_submit_key = parsed;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.post_process_enabled = enabled;
-    settings::write_settings(&app, settings.clone());
+    crate::settings::update_settings(&app, |settings| {
+        settings.post_process_enabled = enabled;
+        Ok(())
+    })?;
 
+    let settings = get_settings(&app);
     // Register or unregister the post-processing shortcut
     if let Some(binding) = settings
         .bindings
@@ -1005,9 +1063,10 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 #[tauri::command]
 #[specta::specta]
 pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.experimental_enabled = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.experimental_enabled = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -1018,26 +1077,30 @@ pub fn change_post_process_base_url_setting(
     provider_id: String,
     base_url: String,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    let label = settings
-        .post_process_provider(&provider_id)
-        .map(|provider| provider.label.clone())
-        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+    settings::update_settings(&app, |settings| {
+        let label = settings
+            .post_process_provider(&provider_id)
+            .map(|provider| provider.label.clone())
+            .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
 
-    let provider = settings
-        .post_process_provider_mut(&provider_id)
-        .expect("Provider looked up above must exist");
+        let provider = settings
+            .post_process_provider_mut(&provider_id)
+            .expect("Provider looked up above must exist");
 
-    if provider.id != "custom" {
-        return Err(format!(
-            "Provider '{}' does not allow editing the base URL",
-            label
-        ));
-    }
+        if provider.id != "custom" {
+            return Err(format!(
+                "Provider '{}' does not allow editing the base URL",
+                label
+            ));
+        }
 
-    provider.base_url = base_url;
-    settings::write_settings(&app, settings);
-    Ok(())
+        provider.base_url = base_url;
+        settings
+            .post_process_models
+            .insert(provider_id.clone(), String::new());
+
+        Ok(())
+    })
 }
 
 /// Generic helper to validate provider exists
@@ -1062,11 +1125,12 @@ pub fn change_post_process_api_key_setting(
     provider_id: String,
     api_key: String,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    validate_provider_exists(&settings, &provider_id)?;
-    settings.post_process_api_keys.insert(provider_id, api_key);
-    settings::write_settings(&app, settings);
-    Ok(())
+    settings::update_settings(&app, |settings| {
+        validate_provider_exists(settings, &provider_id)?;
+        settings.post_process_api_keys.insert(provider_id, api_key);
+
+        Ok(())
+    })
 }
 
 #[tauri::command]
@@ -1076,21 +1140,22 @@ pub fn change_post_process_model_setting(
     provider_id: String,
     model: String,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    validate_provider_exists(&settings, &provider_id)?;
-    settings.post_process_models.insert(provider_id, model);
-    settings::write_settings(&app, settings);
-    Ok(())
+    settings::update_settings(&app, |settings| {
+        validate_provider_exists(settings, &provider_id)?;
+        settings.post_process_models.insert(provider_id, model);
+
+        Ok(())
+    })
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn set_post_process_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    validate_provider_exists(&settings, &provider_id)?;
-    settings.post_process_provider_id = provider_id;
-    settings::write_settings(&app, settings);
-    Ok(())
+    settings::update_settings(&app, |settings| {
+        validate_provider_exists(settings, &provider_id)?;
+        settings.post_process_provider_id = provider_id;
+        Ok(())
+    })
 }
 
 #[tauri::command]
@@ -1100,21 +1165,20 @@ pub fn add_post_process_prompt(
     name: String,
     prompt: String,
 ) -> Result<LLMPrompt, String> {
-    let mut settings = settings::get_settings(&app);
+    settings::update_settings(&app, |settings| {
+        // Generate unique ID using timestamp and random component
+        let id = format!("prompt_{}", chrono::Utc::now().timestamp_millis());
 
-    // Generate unique ID using timestamp and random component
-    let id = format!("prompt_{}", chrono::Utc::now().timestamp_millis());
+        let new_prompt = LLMPrompt {
+            id: id.clone(),
+            name,
+            prompt,
+        };
 
-    let new_prompt = LLMPrompt {
-        id: id.clone(),
-        name,
-        prompt,
-    };
+        settings.post_process_prompts.push(new_prompt.clone());
 
-    settings.post_process_prompts.push(new_prompt.clone());
-    settings::write_settings(&app, settings);
-
-    Ok(new_prompt)
+        Ok(new_prompt)
+    })
 }
 
 #[tauri::command]
@@ -1125,48 +1189,47 @@ pub fn update_post_process_prompt(
     name: String,
     prompt: String,
 ) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
+    settings::update_settings(&app, |settings| {
+        if let Some(existing_prompt) = settings
+            .post_process_prompts
+            .iter_mut()
+            .find(|p| p.id == id)
+        {
+            existing_prompt.name = name;
+            existing_prompt.prompt = prompt;
 
-    if let Some(existing_prompt) = settings
-        .post_process_prompts
-        .iter_mut()
-        .find(|p| p.id == id)
-    {
-        existing_prompt.name = name;
-        existing_prompt.prompt = prompt;
-        settings::write_settings(&app, settings);
-        Ok(())
-    } else {
-        Err(format!("Prompt with id '{}' not found", id))
-    }
+            Ok(())
+        } else {
+            Err(format!("Prompt with id '{}' not found", id))
+        }
+    })
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
+    settings::update_settings(&app, |settings| {
+        // Don't allow deleting the last prompt
+        if settings.post_process_prompts.len() <= 1 {
+            return Err("Cannot delete the last prompt".to_string());
+        }
 
-    // Don't allow deleting the last prompt
-    if settings.post_process_prompts.len() <= 1 {
-        return Err("Cannot delete the last prompt".to_string());
-    }
+        // Find and remove the prompt
+        let original_len = settings.post_process_prompts.len();
+        settings.post_process_prompts.retain(|p| p.id != id);
 
-    // Find and remove the prompt
-    let original_len = settings.post_process_prompts.len();
-    settings.post_process_prompts.retain(|p| p.id != id);
+        if settings.post_process_prompts.len() == original_len {
+            return Err(format!("Prompt with id '{}' not found", id));
+        }
 
-    if settings.post_process_prompts.len() == original_len {
-        return Err(format!("Prompt with id '{}' not found", id));
-    }
+        // If the deleted prompt was selected, select the first one or None
+        if settings.post_process_selected_prompt_id.as_ref() == Some(&id) {
+            settings.post_process_selected_prompt_id =
+                settings.post_process_prompts.first().map(|p| p.id.clone());
+        }
 
-    // If the deleted prompt was selected, select the first one or None
-    if settings.post_process_selected_prompt_id.as_ref() == Some(&id) {
-        settings.post_process_selected_prompt_id =
-            settings.post_process_prompts.first().map(|p| p.id.clone());
-    }
-
-    settings::write_settings(&app, settings);
-    Ok(())
+        Ok(())
+    })
 }
 
 #[tauri::command]
@@ -1217,60 +1280,62 @@ pub async fn fetch_post_process_models(
 #[tauri::command]
 #[specta::specta]
 pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-
-    // Verify the prompt exists
-    if !settings.post_process_prompts.iter().any(|p| p.id == id) {
-        return Err(format!("Prompt with id '{}' not found", id));
-    }
-
-    settings.post_process_selected_prompt_id = Some(id);
-    settings::write_settings(&app, settings);
-    Ok(())
+    settings::update_settings(&app, |settings| {
+        if !settings.post_process_prompts.iter().any(|p| p.id == id) {
+            return Err(format!("Prompt with id '{}' not found", id));
+        }
+        settings.post_process_selected_prompt_id = Some(id);
+        Ok(())
+    })
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.mute_while_recording = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.mute_while_recording = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.append_trailing_space = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.append_trailing_space = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.lazy_stream_close = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.lazy_stream_close = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_vad_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.vad_enabled = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.vad_enabled = enabled;
+        Ok(())
+    })?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.app_language = language.clone();
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.app_language = language.clone();
+        Ok(())
+    })?;
 
     // Refresh the tray menu with the new language
     tray::update_tray_menu(&app, Some(&language));
@@ -1281,72 +1346,13 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 #[tauri::command]
 #[specta::specta]
 pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.show_tray_icon = enabled;
-    settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |settings| {
+        settings.show_tray_icon = enabled;
+        Ok(())
+    })?;
 
     // Apply change immediately
     tray::set_tray_visibility(&app, enabled);
 
     Ok(())
-}
-
-/// Legacy accelerator settings (local ASR removed). Persist only for migration.
-#[tauri::command]
-#[specta::specta]
-pub fn change_transcribe_accelerator_setting(
-    app: AppHandle,
-    accelerator: settings::TranscribeAcceleratorSetting,
-) -> Result<(), String> {
-    let mut s = settings::get_settings(&app);
-    s.transcribe_accelerator = accelerator;
-    settings::write_settings(&app, s);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_ort_accelerator_setting(
-    app: AppHandle,
-    accelerator: settings::OrtAcceleratorSetting,
-) -> Result<(), String> {
-    let mut s = settings::get_settings(&app);
-    s.ort_accelerator = accelerator;
-    settings::write_settings(&app, s);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_transcribe_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
-    let mut s = settings::get_settings(&app);
-    s.transcribe_gpu_device = device;
-    settings::write_settings(&app, s);
-    Ok(())
-}
-
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-pub struct AvailableAccelerators {
-    pub transcribe_cpu: bool,
-    pub transcribe_gpu: bool,
-    pub ort_cpu: bool,
-    pub ort_cuda: bool,
-    pub ort_directml: bool,
-    pub ort_rocm: bool,
-    pub gpu_devices: Vec<String>,
-}
-
-/// Local ASR accelerators were removed; return an empty capability set.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_available_accelerators() -> AvailableAccelerators {
-    AvailableAccelerators {
-        transcribe_cpu: false,
-        transcribe_gpu: false,
-        ort_cpu: false,
-        ort_cuda: false,
-        ort_directml: false,
-        ort_rocm: false,
-        gpu_devices: Vec::new(),
-    }
 }

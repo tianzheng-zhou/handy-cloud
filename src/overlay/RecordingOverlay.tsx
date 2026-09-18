@@ -6,7 +6,7 @@ import { commands } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
+type OverlayState = "recording" | "transcribing" | "processing";
 
 const WAVE_BARS = 9;
 
@@ -59,7 +59,16 @@ const RecordingOverlay: React.FC = () => {
       };
     };
 
-    setupEventListeners();
+    let disposed = false;
+    let cleanup: (() => void) | undefined;
+    void setupEventListeners().then((unlisten) => {
+      if (disposed) unlisten();
+      else cleanup = unlisten;
+    });
+    return () => {
+      disposed = true;
+      cleanup?.();
+    };
   }, []);
 
   const waveform = (
@@ -78,7 +87,7 @@ const RecordingOverlay: React.FC = () => {
   const cancelBtn = (
     <button
       className="sx"
-      aria-label="cancel"
+      aria-label={t("tray.cancel")}
       onClick={() => commands.cancelOperation()}
     >
       <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -112,8 +121,7 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
-  const working =
-    state === "transcribing" || state === "processing" || state === "streaming";
+  const working = state === "transcribing" || state === "processing";
   const workLabel =
     state === "processing"
       ? t("overlay.processing")

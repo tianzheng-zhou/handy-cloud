@@ -89,7 +89,11 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         }
       }
 
-      await setPostProcessProvider(providerId);
+      try {
+        await setPostProcessProvider(providerId);
+      } catch {
+        return;
+      }
 
       // Auto-fetch available models for the new provider so the model dropdown
       // reflects what's actually valid. Without this, a stale model value from
@@ -192,15 +196,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     return options;
   }, [availableModelsRaw, model]);
 
-  const isBaseUrlUpdating = isUpdating(
-    `post_process_base_url:${selectedProviderId}`,
-  );
-  const isApiKeyUpdating = isUpdating(
-    `post_process_api_key:${selectedProviderId}`,
-  );
-  const isModelUpdating = isUpdating(
-    `post_process_model:${selectedProviderId}`,
-  );
+  const isBaseUrlUpdating = isUpdating("post_process");
+  const isApiKeyUpdating = isUpdating("post_process");
+  const isModelUpdating = isUpdating("post_process");
   const isFetchingModels = isUpdating(
     `post_process_models_fetch:${selectedProviderId}`,
   );

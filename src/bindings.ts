@@ -5,9 +5,6 @@
 
 
 export const commands = {
-async getUpdateCapability() : Promise<boolean> {
-    return await TAURI_INVOKE("get_update_capability");
-},
 async changeBinding(id: string, binding: string) : Promise<Result<BindingResponse, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_binding", { id, binding }) };
@@ -423,39 +420,6 @@ async changeShowTrayIconSetting(enabled: boolean) : Promise<Result<null, string>
 }
 },
 /**
- * Legacy accelerator settings (local ASR removed). Persist only for migration.
- */
-async changeTranscribeAcceleratorSetting(accelerator: TranscribeAcceleratorSetting) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_transcribe_accelerator_setting", { accelerator }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeOrtAcceleratorSetting(accelerator: OrtAcceleratorSetting) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_ort_accelerator_setting", { accelerator }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeTranscribeGpuDevice(device: number) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_transcribe_gpu_device", { device }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Local ASR accelerators were removed; return an empty capability set.
- */
-async getAvailableAccelerators() : Promise<AvailableAccelerators> {
-    return await TAURI_INVOKE("get_available_accelerators");
-},
-/**
  * Start key recording mode
  */
 async startHandyKeysRecording(bindingId: string) : Promise<Result<null, string>> {
@@ -573,6 +537,12 @@ async openAppDataDir() : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Return whether this build includes a signed update source.
+ */
+async getUpdateCapability() : Promise<boolean> {
+    return await TAURI_INVOKE("get_update_capability");
 },
 /**
  * Check if Apple Intelligence is available on this device.
@@ -849,51 +819,47 @@ historyUpdatePayload: "history-update-payload"
  * object, so a partial store can never fail the whole load (#1619).
  * Field-level defaults below take precedence where present.
  */
-export type AppSettings = { 
+export type AppSettings = {
 /**
  * Internal settings schema marker for one-time migrations. Fresh installs
  * start at the current version; existing stores missing this key are
  * treated as version 0 and migrated forward.
  */
-settings_schema_version?: number; 
+settings_schema_version?: number;
 /**
  * Defaults to empty on partial stores; the load path merges in the
  * default bindings for any missing keys before the settings are used.
  */
-bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean; audio_feedback?: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; show_whats_new_on_update?: boolean; 
+bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean; audio_feedback?: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; show_whats_new_on_update?: boolean;
 /**
  * The app version whose What's New the user has already seen. Fresh installs
  * default to the current version (nothing is "new" to them). Existing users
  * upgrading from before this key existed are blanked by the migration so they
  * see the current release's notes — see `apply_settings_migrations`.
  */
-whats_new_last_seen_version?: string; 
-/**
- * Legacy local-model id (kept for settings migration; unused by cloud ASR).
- */
-selected_model?: string; onboarding_completed?: boolean; 
+whats_new_last_seen_version?: string; onboarding_completed?: boolean;
 /**
  * DashScope / Bailian API key for Qwen Omni cloud transcription.
  */
-cloud_asr_api_key?: string; cloud_asr_base_url?: string; cloud_asr_model?: string; 
+cloud_asr_api_key?: string; cloud_asr_base_url?: string; cloud_asr_model?: string;
 /**
  * When true, capture the primary screen (JPEG) as multimodal context for Omni.
  */
-cloud_asr_screen_context?: boolean; 
+cloud_asr_screen_context?: boolean;
 /**
  * Capture backend for screen context (Screenshot portal vs ScreenCast).
  */
-cloud_asr_screen_capture_method?: ScreenCaptureMethod; 
+cloud_asr_screen_capture_method?: ScreenCaptureMethod;
 /**
  * xdg-desktop-portal ScreenCast restore token for silent re-capture.
  */
-cloud_asr_screencast_restore_token?: string | null; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+cloud_asr_screencast_restore_token?: string | null; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number;
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
  * fixed delay. See `paste_tx`. macOS and Windows only.
  */
-reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: string | null; custom_filler_words?: string[] | null; transcribe_accelerator?: TranscribeAcceleratorSetting; ort_accelerator?: OrtAcceleratorSetting; transcribe_gpu_device?: number; extra_recording_buffer_ms?: number; vad_enabled?: boolean; 
+reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: string | null; custom_filler_words?: string[] | null; extra_recording_buffer_ms?: number; vad_enabled?: boolean;
 /**
  * Which recording overlay to show: None / Minimal / Live. Streaming mode is
  * not gated on this — that follows model capability. Migrated from the old
@@ -902,7 +868,6 @@ reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: strin
 overlay_style?: OverlayStyle }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
-export type AvailableAccelerators = { transcribe_cpu: boolean; transcribe_gpu: boolean; ort_cpu: boolean; ort_cuda: boolean; ort_directml: boolean; ort_rocm: boolean; gpu_devices: string[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CloudAsrModelOption = { id: string; label: string }
@@ -912,12 +877,12 @@ export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { 
 /**
  * Result of changing keyboard implementation
  */
-export type ImplementationChangeResult = { success: boolean; 
+export type ImplementationChangeResult = { success: boolean;
 /**
  * List of binding IDs that were reset to defaults due to incompatibility
  */
 reset_bindings: string[] }
-export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_pid: number | null; culprit_name: string | null; 
+export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_pid: number | null; culprit_name: string | null;
 /**
  * Counts only — key identity is deliberately never captured.
  */
@@ -925,16 +890,11 @@ key_down: number; key_up: number; flags_changed: number; mouse: number; duration
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
-export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "top" | "bottom"
 /**
- * Which recording overlay to display. `Minimal` and `Live` share one base
- * (the pill); `Live` grows into the panel that shows live transcription text.
- * `None` hides the overlay entirely. Decoupled from whether the model runs in
- * streaming mode (that is driven purely by model capability).
+ * Recording feedback: hidden or a compact pill.
  */
-export type OverlayStyle = "none" | "minimal" | "live"
+export type OverlayStyle = "none" | "minimal"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
@@ -943,42 +903,42 @@ export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "
 /**
  * How to capture the screen for Omni multimodal context (Linux).
  */
-export type ScreenCaptureMethod = 
+export type ScreenCaptureMethod =
 /**
  * xdg-desktop-portal Screenshot (may flash / play shutter on GNOME).
  */
-"screenshot" | 
+"screenshot" |
 /**
  * xdg-desktop-portal ScreenCast + one PipeWire frame (silent after share grant).
  */
 "screencast"
 export type SecretMap = Partial<{ [key in string]: string }>
-export type SecureInputStatus = { 
+export type SecureInputStatus = {
 /**
  * Secure input is currently enabled (live check)
  */
-enabled: boolean; 
+enabled: boolean;
 /**
  * Enabled continuously long enough to be considered stuck (not just a
  * password field gaining momentary focus)
  */
-sustained: boolean; culprit_pid: number | null; culprit_name: string | null; 
+sustained: boolean; culprit_pid: number | null; culprit_name: string | null;
 /**
  * Carbon fallback registrations are currently active
  */
-fallback_active: boolean; 
+fallback_active: boolean;
 /**
  * Binding ids shadow-registered with identical semantics
  */
-covered_bindings: string[]; 
+covered_bindings: string[];
 /**
  * Side-specific binding ids widened to match either side while shadowed
  */
-degraded_bindings: string[]; 
+degraded_bindings: string[];
 /**
  * Binding ids that cannot fire at all (e.g. fn+key, registration failure)
  */
-uncovered_bindings: string[]; 
+uncovered_bindings: string[];
 /**
  * The user tried to record a shortcut while secure input was active.
  * Treated as user impact even when every binding is covered, so the
@@ -992,7 +952,6 @@ export type SoundTheme = "marimba" | "pop" | "custom"
  * and `Dark` force one of the two palettes Handy already ships.
  */
 export type Theme = "system" | "light" | "dark"
-export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 

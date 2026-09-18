@@ -40,35 +40,13 @@ pub enum VadPolicy {
     Disabled,
     /// Current offline-tuned VAD profile.
     Offline,
-    /// VAD profile with a longer post-speech tail for streaming-capable models.
-    Streaming,
 }
 
-/// A single VAD engine plus the two hangover-tail lengths its smoothing wrapper
-/// should use. The offline and streaming policies are never active
-/// concurrently, so one detector is reconfigured per session (see `Cmd::Start`)
-/// rather than kept as two resident engines.
+/// One Silero engine shared with the recording consumer.
 #[derive(Clone)]
 struct VadConfig {
     detector: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
-    offline_hangover_frames: usize,
-    streaming_hangover_frames: usize,
 }
-
-impl VadConfig {
-    /// Post-speech hangover tail (in 30 ms frames) for the given policy.
-    /// `Disabled` never reaches the detector, so it maps to the offline value.
-    fn hangover_for(&self, policy: VadPolicy) -> usize {
-        match policy {
-            VadPolicy::Streaming => self.streaming_hangover_frames,
-            VadPolicy::Offline | VadPolicy::Disabled => self.offline_hangover_frames,
-        }
-    }
-}
-
-/// Callback invoked with each 16 kHz mono frame that passes the active capture
-/// policy while recording. Used to feed a live streaming transcription as audio arrives.
-pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 
 pub struct AudioRecorder {
     device: Option<Device>,
@@ -76,7 +54,6 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<VadConfig>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
-    audio_cb: Option<AudioFrameCallback>,
     /// Preferred stream config cached per device name. The two HAL property
     /// queries in `get_preferred_config` cost ~40-85ms per open (worse on
     /// USB/Bluetooth), which lands on the keypress->capture path in on-demand
@@ -94,24 +71,14 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
-            audio_cb: None,
             config_cache: Arc::new(Mutex::new(None)),
         })
     }
 
-    /// Attach a single VAD engine, reconfigured per session for the offline vs
-    /// streaming hangover tail. The two policies are mutually exclusive within a
-    /// recording, so one engine covers both instead of two resident instances.
-    pub fn with_vad(
-        mut self,
-        detector: Box<dyn VoiceActivityDetector>,
-        offline_hangover_frames: usize,
-        streaming_hangover_frames: usize,
-    ) -> Self {
+    /// Attach the VAD engine with its existing smoothing configuration.
+    pub fn with_vad(mut self, detector: Box<dyn VoiceActivityDetector>) -> Self {
         self.vad = Some(VadConfig {
             detector: Arc::new(Mutex::new(detector)),
-            offline_hangover_frames,
-            streaming_hangover_frames,
         });
         self
     }
@@ -121,18 +88,6 @@ impl AudioRecorder {
         F: Fn(Vec<f32>) + Send + Sync + 'static,
     {
         self.level_cb = Some(Arc::new(cb));
-        self
-    }
-
-    /// Register a callback that receives real-time 16 kHz frames after the active
-    /// VAD policy has been applied. Frames arrive in real time, in order, on the
-    /// recorder's consumer thread — keep the callback cheap (e.g. forward to a
-    /// channel) so it never stalls capture.
-    pub fn with_audio_callback<F>(mut self, cb: F) -> Self
-    where
-        F: Fn(&[f32]) + Send + Sync + 'static,
-    {
-        self.audio_cb = Some(Arc::new(cb));
         self
     }
 
@@ -157,8 +112,6 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
-        // Move the optional real-time audio frame callback into the worker thread
-        let audio_cb = self.audio_cb.clone();
         let config_cache = Arc::clone(&self.config_cache);
 
         let worker = std::thread::spawn(move || {
@@ -274,7 +227,6 @@ impl AudioRecorder {
                         sample_rx,
                         cmd_rx,
                         level_cb,
-                        audio_cb,
                         stop_flag,
                         stream_running_at,
                     );
@@ -500,49 +452,6 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
             && normalized.contains("coreaudio"))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
-
-    #[test]
-    fn detects_access_is_denied() {
-        assert!(is_microphone_access_denied("Access is denied"));
-    }
-
-    #[test]
-    fn detects_permission_denied() {
-        assert!(is_microphone_access_denied("permission denied"));
-    }
-
-    #[test]
-    fn detects_windows_error_code() {
-        assert!(is_microphone_access_denied("WASAPI error: 0x80070005"));
-    }
-
-    #[test]
-    fn does_not_match_unrelated_errors() {
-        assert!(!is_microphone_access_denied("device not found"));
-    }
-
-    #[test]
-    fn detects_no_input_device() {
-        assert!(is_no_input_device_error("No input device found"));
-    }
-
-    #[test]
-    fn detects_coreaudio_config_error() {
-        assert!(is_no_input_device_error(
-            "Failed to fetch preferred config: A backend-specific error has occurred: An unknown error unknown to the coreaudio-rs API occurred"
-        ));
-    }
-
-    #[test]
-    fn does_not_match_other_errors_for_no_device() {
-        assert!(!is_no_input_device_error("permission denied"));
-        assert!(!is_no_input_device_error("device not found"));
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 fn run_consumer(
     in_sample_rate: u32,
@@ -550,13 +459,12 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
-    audio_cb: Option<AudioFrameCallback>,
     stop_flag: Arc<AtomicBool>,
     stream_running_at: Instant,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
-        constants::WHISPER_SAMPLE_RATE as usize,
+        constants::TRANSCRIPTION_SAMPLE_RATE as usize,
         Duration::from_millis(30),
     );
 
@@ -597,7 +505,6 @@ fn run_consumer(
         recording: bool,
         vad_policy: VadPolicy,
         vad: &Option<VadConfig>,
-        audio_cb: &Option<AudioFrameCallback>,
         out_buf: &mut Vec<f32>,
     ) {
         if !recording {
@@ -606,9 +513,6 @@ fn run_consumer(
 
         let mut emit = |buf: &[f32]| {
             out_buf.extend_from_slice(buf);
-            if let Some(cb) = audio_cb {
-                cb(buf);
-            }
         };
 
         if vad_policy == VadPolicy::Disabled {
@@ -648,13 +552,10 @@ fn run_consumer(
                     recording = true;
                     visualizer.reset();
                     frame_resampler.reset();
-                    // Reconfigure the single VAD engine for this session's policy
-                    // and clear its smoothing + recurrent state before it sees
-                    // any frames.
+                    // Reset smoothing and recurrent state before the next recording.
                     if vad_policy != VadPolicy::Disabled {
                         if let Some(cfg) = &vad {
                             let mut det = cfg.detector.lock().unwrap();
-                            det.set_hangover_frames(cfg.hangover_for(vad_policy));
                             det.reset();
                         }
                     }
@@ -667,14 +568,7 @@ fn run_consumer(
                     // the recording, so feed it ahead of the drain below.
                     if let Some(AudioChunk::Samples(raw)) = pending.take() {
                         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-                            handle_frame(
-                                frame,
-                                true,
-                                vad_policy,
-                                &vad,
-                                &audio_cb,
-                                &mut processed_samples,
-                            )
+                            handle_frame(frame, true, vad_policy, &vad, &mut processed_samples)
                         });
                     }
 
@@ -691,7 +585,6 @@ fn run_consumer(
                                         true,
                                         vad_policy,
                                         &vad,
-                                        &audio_cb,
                                         &mut processed_samples,
                                     )
                                 });
@@ -705,14 +598,7 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(
-                            frame,
-                            true,
-                            vad_policy,
-                            &vad,
-                            &audio_cb,
-                            &mut processed_samples,
-                        )
+                        handle_frame(frame, true, vad_policy, &vad, &mut processed_samples)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
@@ -753,14 +639,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(
-                frame,
-                recording,
-                vad_policy,
-                &vad,
-                &audio_cb,
-                &mut processed_samples,
-            )
+            handle_frame(frame, recording, vad_policy, &vad, &mut processed_samples)
         });
 
         if recording {
@@ -772,5 +651,48 @@ fn run_consumer(
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_microphone_access_denied, is_no_input_device_error};
+
+    #[test]
+    fn detects_access_is_denied() {
+        assert!(is_microphone_access_denied("Access is denied"));
+    }
+
+    #[test]
+    fn detects_permission_denied() {
+        assert!(is_microphone_access_denied("permission denied"));
+    }
+
+    #[test]
+    fn detects_windows_error_code() {
+        assert!(is_microphone_access_denied("WASAPI error: 0x80070005"));
+    }
+
+    #[test]
+    fn does_not_match_unrelated_errors() {
+        assert!(!is_microphone_access_denied("device not found"));
+    }
+
+    #[test]
+    fn detects_no_input_device() {
+        assert!(is_no_input_device_error("No input device found"));
+    }
+
+    #[test]
+    fn detects_coreaudio_config_error() {
+        assert!(is_no_input_device_error(
+            "Failed to fetch preferred config: A backend-specific error has occurred: An unknown error unknown to the coreaudio-rs API occurred"
+        ));
+    }
+
+    #[test]
+    fn does_not_match_other_errors_for_no_device() {
+        assert!(!is_no_input_device_error("permission denied"));
+        assert!(!is_no_input_device_error("device not found"));
     }
 }

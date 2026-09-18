@@ -128,30 +128,13 @@ pub enum OverlayPosition {
     Bottom,
 }
 
-/// Which recording overlay to display. `Minimal` and `Live` share one base
-/// (the pill); `Live` grows into the panel that shows live transcription text.
-/// `None` hides the overlay entirely. Decoupled from whether the model runs in
-/// streaming mode (that is driven purely by model capability).
+/// Recording feedback: hidden or a compact pill.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayStyle {
     None,
+    #[serde(alias = "live")]
     Minimal,
-    Live,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum ModelUnloadTimeout {
-    Never,
-    Immediately,
-    Min2,
-    #[default]
-    Min5,
-    Min10,
-    Min15,
-    Hour1,
-    Sec15, // Debug mode only
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -229,32 +212,6 @@ impl Default for PasteMethod {
     }
 }
 
-impl ModelUnloadTimeout {
-    #[allow(dead_code)] // Legacy setting retained for store migration.
-    pub fn to_minutes(self) -> Option<u64> {
-        match self {
-            ModelUnloadTimeout::Never => None,
-            ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
-            ModelUnloadTimeout::Min2 => Some(2),
-            ModelUnloadTimeout::Min5 => Some(5),
-            ModelUnloadTimeout::Min10 => Some(10),
-            ModelUnloadTimeout::Min15 => Some(15),
-            ModelUnloadTimeout::Hour1 => Some(60),
-            ModelUnloadTimeout::Sec15 => Some(0), // Special case for debug - handled separately
-        }
-    }
-
-    #[allow(dead_code)] // Legacy setting retained for store migration.
-    pub fn to_seconds(self) -> Option<u64> {
-        match self {
-            ModelUnloadTimeout::Never => None,
-            ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
-            ModelUnloadTimeout::Sec15 => Some(15),
-            _ => self.to_minutes().map(|m| m * 60),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SoundTheme {
@@ -303,27 +260,6 @@ pub enum TypingTool {
     Xdotool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum TranscribeAcceleratorSetting {
-    #[default]
-    Auto,
-    Cpu,
-    Gpu,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum OrtAcceleratorSetting {
-    #[default]
-    Auto,
-    Cpu,
-    Cuda,
-    #[serde(rename = "directml")]
-    DirectMl,
-    Rocm,
-}
-
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -358,7 +294,7 @@ impl std::ops::DerefMut for SecretMap {
 /// its `get_default_settings()` value when missing from a stored settings
 /// object, so a partial store can never fail the whole load (#1619).
 /// Field-level defaults below take precedence where present.
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+#[derive(Serialize, Deserialize, Clone, Type)]
 #[serde(default)]
 pub struct AppSettings {
     /// Internal settings schema marker for one-time migrations. Fresh installs
@@ -392,9 +328,6 @@ pub struct AppSettings {
     /// see the current release's notes — see `apply_settings_migrations`.
     #[serde(default = "default_whats_new_last_seen_version")]
     pub whats_new_last_seen_version: String,
-    /// Legacy local-model id (kept for settings migration; unused by cloud ASR).
-    #[serde(default = "default_model")]
-    pub selected_model: String,
     #[serde(default)]
     pub onboarding_completed: bool,
     /// DashScope / Bailian API key for Qwen Omni cloud transcription.
@@ -433,8 +366,6 @@ pub struct AppSettings {
     pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
-    #[serde(default)]
-    pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
     #[serde(default = "default_history_limit")]
@@ -495,12 +426,6 @@ pub struct AppSettings {
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
-    pub transcribe_accelerator: TranscribeAcceleratorSetting,
-    #[serde(default)]
-    pub ort_accelerator: OrtAcceleratorSetting,
-    #[serde(default = "default_transcribe_gpu_device")]
-    pub transcribe_gpu_device: i32,
-    #[serde(default)]
     pub extra_recording_buffer_ms: u64,
     #[serde(default = "default_vad_enabled")]
     pub vad_enabled: bool,
@@ -511,8 +436,21 @@ pub struct AppSettings {
     pub overlay_style: OverlayStyle,
 }
 
-fn default_model() -> String {
-    "".to_string()
+impl fmt::Debug for AppSettings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut value = serde_json::to_value(self).map_err(|_| fmt::Error)?;
+        if !self.cloud_asr_api_key.is_empty() {
+            value["cloud_asr_api_key"] = serde_json::json!("[REDACTED]");
+        }
+        if let Some(keys) = value["post_process_api_keys"].as_object_mut() {
+            for secret in keys.values_mut() {
+                if secret.as_str().is_some_and(|value| !value.is_empty()) {
+                    *secret = serde_json::json!("[REDACTED]");
+                }
+            }
+        }
+        value.fmt(f)
+    }
 }
 
 fn default_cloud_asr_base_url() -> String {
@@ -523,7 +461,7 @@ fn default_cloud_asr_model() -> String {
     crate::dashscope_omni::MODEL_FLASH.to_string()
 }
 
-const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 1;
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 2;
 
 fn default_settings_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
@@ -770,10 +708,6 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
-fn default_transcribe_gpu_device() -> i32 {
-    -1 // auto
-}
-
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
@@ -900,7 +834,6 @@ pub fn get_default_settings() -> AppSettings {
         update_checks_enabled: default_update_checks_enabled(),
         show_whats_new_on_update: default_show_whats_new_on_update(),
         whats_new_last_seen_version: default_whats_new_last_seen_version(),
-        selected_model: "".to_string(),
         onboarding_completed: false,
         cloud_asr_api_key: String::new(),
         cloud_asr_base_url: default_cloud_asr_base_url(),
@@ -918,7 +851,6 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
-        model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
@@ -947,9 +879,6 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
-        transcribe_accelerator: TranscribeAcceleratorSetting::default(),
-        ort_accelerator: OrtAcceleratorSetting::default(),
-        transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         overlay_style: default_overlay_style(),
@@ -995,51 +924,70 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 }
 
 pub fn get_settings(app: &AppHandle) -> AppSettings {
+    try_get_settings(app).unwrap_or_else(|error| {
+        warn!("Could not load settings: {error}");
+        get_default_settings()
+    })
+}
+
+pub fn try_get_settings(app: &AppHandle) -> Result<AppSettings, String> {
+    let _guard = SETTINGS_WRITE_LOCK
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     let store = app
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
-        .expect("Failed to initialize store");
+        .map_err(|error| format!("Could not open settings: {error}"))?;
+    let (settings, changed) = read_settings(&*store);
+    if changed {
+        persist_settings(&*store, &settings)?;
+    }
+    Ok(settings)
+}
 
-    // Settings reads also persist one-time migrations. Migration helpers are
-    // idempotent, so this converges after the first read of an older store.
-    let mut settings = if let Some(settings_value) = store.get("settings") {
-        let (mut settings, mut updated) =
-            match serde_json::from_value::<AppSettings>(settings_value.clone()) {
-                Ok(settings) => (settings, false),
-                Err(e) => {
-                    warn!("Failed to parse stored settings ({e}); salvaging valid fields");
-                    (salvage_settings(&settings_value), true)
-                }
-            };
+// Small storage boundary keeps transactions testable without a desktop runtime.
+trait SettingsStore {
+    fn get(&self, key: &str) -> Option<serde_json::Value>;
+    fn set(&self, key: &str, value: serde_json::Value);
+    fn delete(&self, key: &str);
+    fn save(&self) -> Result<(), String>;
+}
+impl SettingsStore for tauri_plugin_store::Store<tauri::Wry> {
+    fn get(&self, key: &str) -> Option<serde_json::Value> {
+        self.get(key)
+    }
+    fn set(&self, key: &str, value: serde_json::Value) {
+        self.set(key, value);
+    }
+    fn delete(&self, key: &str) {
+        self.delete(key);
+    }
+    fn save(&self) -> Result<(), String> {
+        self.save().map_err(|e| e.to_string())
+    }
+}
 
-        if apply_settings_migrations(&mut settings, &settings_value) {
-            updated = true;
-        }
-
-        // Merge in any bindings added since this store was written.
-        for (key, value) in get_default_settings().bindings {
-            if let std::collections::hash_map::Entry::Vacant(entry) = settings.bindings.entry(key) {
-                debug!("Adding missing binding: {}", entry.key());
-                entry.insert(value);
-                updated = true;
-            }
-        }
-
-        if updated {
-            store.set("settings", serde_json::to_value(&settings).unwrap());
-        }
-
+fn read_settings(store: &impl SettingsStore) -> (AppSettings, bool) {
+    let stored = store.get("settings");
+    let mut changed = stored.is_none();
+    let mut settings = if let Some(value) = stored {
+        let mut settings =
+            serde_json::from_value::<AppSettings>(value.clone()).unwrap_or_else(|_| {
+                changed = true;
+                salvage_settings(&value)
+            });
+        changed |= apply_settings_migrations(&mut settings, &value);
         settings
     } else {
-        let default_settings = get_default_settings();
-        store.set("settings", serde_json::to_value(&default_settings).unwrap());
-        default_settings
+        get_default_settings()
     };
-
-    if ensure_post_process_defaults(&mut settings) {
-        store.set("settings", serde_json::to_value(&settings).unwrap());
+    for (key, value) in get_default_settings().bindings {
+        if let std::collections::hash_map::Entry::Vacant(entry) = settings.bindings.entry(key) {
+            entry.insert(value);
+            changed = true;
+        }
     }
-
-    settings
+    changed |= ensure_post_process_defaults(&mut settings);
+    (settings, changed)
 }
 
 /// Rebuilds settings from a store value that failed to deserialize as a whole.
@@ -1090,8 +1038,7 @@ fn apply_settings_migrations(
     // already made it through model selection. Users who merely have compatible
     // files on disk should still see onboarding.
     if settings_value.get("onboarding_completed").is_none() {
-        settings.onboarding_completed =
-            !settings.cloud_asr_api_key.is_empty() || !settings.selected_model.is_empty();
+        settings.onboarding_completed = !settings.cloud_asr_api_key.trim().is_empty();
         updated = true;
     }
 
@@ -1109,16 +1056,9 @@ fn apply_settings_migrations(
         .get("settings_schema_version")
         .and_then(|v| v.as_u64())
         .unwrap_or(0);
-    if stored_schema_version < 1 {
-        // `transcribe_gpu_device` used to be a UI ordinal; it is now a
-        // transcribe.cpp registry index. A positive legacy value can point at a
-        // different GPU after CPU/accelerator/backend devices are included in
-        // the registry, so reset ambiguous explicit selections to Auto once.
-        if settings.transcribe_gpu_device > 0 {
-            settings.transcribe_accelerator = TranscribeAcceleratorSetting::Auto;
-            settings.transcribe_gpu_device = default_transcribe_gpu_device();
-        }
+    if stored_schema_version < u64::from(CURRENT_SETTINGS_SCHEMA_VERSION) {
         settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
+        settings.onboarding_completed = !settings.cloud_asr_api_key.trim().is_empty();
         updated = true;
     }
 
@@ -1138,8 +1078,11 @@ fn apply_settings_migrations(
         updated = true;
     }
 
-    // Cloud ASR is batch-only — demote any stored Live style to Minimal.
-    if matches!(settings.overlay_style, OverlayStyle::Live) {
+    if settings_value
+        .get("overlay_style")
+        .and_then(|value| value.as_str())
+        == Some("live")
+    {
         settings.overlay_style = OverlayStyle::Minimal;
         updated = true;
     }
@@ -1147,41 +1090,43 @@ fn apply_settings_migrations(
     updated
 }
 
-pub fn write_settings(app: &AppHandle, settings: AppSettings) {
-    let _guard = SETTINGS_WRITE_LOCK
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    write_settings_unlocked(app, settings);
-}
-
-fn write_settings_unlocked(app: &AppHandle, settings: AppSettings) {
-    let store = app
-        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
-        .expect("Failed to initialize store");
-
-    store.set("settings", serde_json::to_value(&settings).unwrap());
-    if let Err(e) = store.save() {
-        warn!("Failed to flush settings store: {e}");
+fn persist_settings(store: &impl SettingsStore, settings: &AppSettings) -> Result<(), String> {
+    let previous = store.get("settings");
+    let value = serde_json::to_value(settings).map_err(|error| error.to_string())?;
+    store.set("settings", value);
+    if let Err(error) = store.save() {
+        if let Some(previous) = previous {
+            store.set("settings", previous);
+        } else {
+            store.delete("settings");
+        }
+        return Err(format!("Could not save settings: {error}"));
     }
+    Ok(())
 }
 
-/// Atomically read-modify-write app settings under the write lock.
-pub fn update_settings<R>(app: &AppHandle, f: impl FnOnce(&mut AppSettings) -> R) -> R {
+/// Apply a validated read-modify-write transaction. OS operations belong outside this lock.
+pub fn update_settings<R>(
+    app: &AppHandle,
+    update: impl FnOnce(&mut AppSettings) -> Result<R, String>,
+) -> Result<R, String> {
+    let store = app
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .map_err(|error| format!("Could not open settings: {error}"))?;
+    update_store(&*store, update)
+}
+
+fn update_store<R>(
+    store: &impl SettingsStore,
+    update: impl FnOnce(&mut AppSettings) -> Result<R, String>,
+) -> Result<R, String> {
     let _guard = SETTINGS_WRITE_LOCK
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    // Load directly from the store (do not call get_settings — it may write
-    // migrations and must not nest under this lock via write_settings).
-    let store = app
-        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
-        .expect("Failed to initialize store");
-    let mut settings = store
-        .get("settings")
-        .and_then(|v| serde_json::from_value::<AppSettings>(v).ok())
-        .unwrap_or_else(get_default_settings);
-    let out = f(&mut settings);
-    write_settings_unlocked(app, settings);
-    out
+    let (mut settings, _) = read_settings(store);
+    let output = update(&mut settings)?;
+    persist_settings(store, &settings)?;
+    Ok(output)
 }
 
 /// ScreenCast portal restore token (Linux). Prefer the dedicated store key.
@@ -1199,38 +1144,35 @@ pub fn get_screencast_restore_token(app: &AppHandle) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-pub fn set_screencast_restore_token(app: &AppHandle, token: Option<String>) {
+pub fn set_screencast_restore_token(app: &AppHandle, token: Option<String>) -> Result<(), String> {
+    let store = app
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .map_err(|error| format!("Could not open settings: {error}"))?;
+    set_store_token(&*store, token)
+}
+
+fn set_store_token(store: &impl SettingsStore, token: Option<String>) -> Result<(), String> {
     let _guard = SETTINGS_WRITE_LOCK
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    let store = app
-        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
-        .expect("Failed to initialize store");
-
-    match &token {
-        Some(t) if !t.is_empty() => {
-            store.set(
-                SCREENCAST_TOKEN_STORE_KEY,
-                serde_json::Value::String(t.clone()),
-            );
-        }
-        _ => {
-            let _ = store.delete(SCREENCAST_TOKEN_STORE_KEY);
-        }
-    }
-
-    // Keep mirrored field in sync for debugging / older code paths.
-    let mut settings = if let Some(settings_value) = store.get("settings") {
-        serde_json::from_value::<AppSettings>(settings_value)
-            .unwrap_or_else(|_| get_default_settings())
+    let previous = store.get(SCREENCAST_TOKEN_STORE_KEY);
+    let token = token.filter(|token| !token.is_empty());
+    let (mut settings, _) = read_settings(store);
+    settings.cloud_asr_screencast_restore_token = token.clone();
+    if let Some(token) = token {
+        store.set(SCREENCAST_TOKEN_STORE_KEY, serde_json::Value::String(token));
     } else {
-        get_default_settings()
-    };
-    settings.cloud_asr_screencast_restore_token = token.filter(|s| !s.is_empty());
-    store.set("settings", serde_json::to_value(&settings).unwrap());
-    if let Err(e) = store.save() {
-        warn!("Failed to flush screencast token to store: {e}");
+        store.delete(SCREENCAST_TOKEN_STORE_KEY);
     }
+    if let Err(error) = persist_settings(store, &settings) {
+        if let Some(previous) = previous {
+            store.set(SCREENCAST_TOKEN_STORE_KEY, previous);
+        } else {
+            store.delete(SCREENCAST_TOKEN_STORE_KEY);
+        }
+        return Err(error);
+    }
+    Ok(())
 }
 
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
@@ -1386,13 +1328,13 @@ mod tests {
         let mut settings: AppSettings = serde_json::from_value(stored.clone())
             .expect("a stored v0.9.0 settings object must keep parsing strictly");
 
-        assert_eq!(settings.selected_model, "whisper-large-v3-turbo");
+        assert_eq!(settings.cloud_asr_model, crate::dashscope_omni::MODEL_FLASH);
         assert_eq!(settings.bindings["transcribe"].current_binding, "f13");
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
 
         // A current-format store must not be rewritten on every read.
-        assert!(!apply_settings_migrations(&mut settings, &stored));
+        assert!(apply_settings_migrations(&mut settings, &stored));
     }
 
     #[test]
@@ -1400,7 +1342,7 @@ mod tests {
         let mut stored = default_settings_json();
         let map = stored.as_object_mut().unwrap();
         map.insert(
-            "selected_model".into(),
+            "cloud_asr_model".into(),
             serde_json::json!("parakeet-tdt-0.6b-v3"),
         );
         map.insert("onboarding_completed".into(), serde_json::json!(true));
@@ -1414,7 +1356,7 @@ mod tests {
         assert!(serde_json::from_value::<AppSettings>(stored.clone()).is_err());
 
         let salvaged = salvage_settings(&stored);
-        assert_eq!(salvaged.selected_model, "parakeet-tdt-0.6b-v3");
+        assert_eq!(salvaged.cloud_asr_model, "parakeet-tdt-0.6b-v3");
         assert!(salvaged.onboarding_completed);
         assert_eq!(salvaged.bindings["transcribe"].current_binding, "f13");
         assert_eq!(salvaged.sound_theme, default_sound_theme());
@@ -1446,12 +1388,12 @@ mod tests {
             "bindings".into(),
             serde_json::json!({ "transcribe": { "id": 42 } }),
         );
-        map.insert("selected_model".into(), serde_json::json!("whisper-small"));
+        map.insert("cloud_asr_model".into(), serde_json::json!("whisper-small"));
 
         assert!(serde_json::from_value::<AppSettings>(stored.clone()).is_err());
 
         let salvaged = salvage_settings(&stored);
-        assert_eq!(salvaged.selected_model, "whisper-small");
+        assert_eq!(salvaged.cloud_asr_model, "whisper-small");
         let defaults = get_default_settings();
         assert_eq!(
             salvaged.bindings["transcribe"].current_binding,
@@ -1467,11 +1409,11 @@ mod tests {
             "field_from_the_future".into(),
             serde_json::json!({ "nested": true }),
         );
-        map.insert("selected_model".into(), serde_json::json!("kept"));
+        map.insert("cloud_asr_model".into(), serde_json::json!("kept"));
         map.insert("sound_theme".into(), serde_json::json!("theremin"));
 
         let salvaged = salvage_settings(&stored);
-        assert_eq!(salvaged.selected_model, "kept");
+        assert_eq!(salvaged.cloud_asr_model, "kept");
         assert_eq!(salvaged.sound_theme, default_sound_theme());
     }
 
@@ -1550,52 +1492,21 @@ mod tests {
     }
 
     #[test]
-    fn gpu_device_migration_resets_legacy_positive_selection_to_auto() {
-        let mut settings = get_default_settings();
-        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
-        settings.transcribe_gpu_device = 2;
-
+    fn legacy_cloud_migration_discards_local_fields_and_requires_api_key() {
         let raw = serde_json::json!({
-            "transcribe_accelerator": "gpu",
-            "transcribe_gpu_device": 2
+            "selected_model": "whisper-small", "transcribe_gpu_device": 2,
+            "model_unload_timeout": "min5", "onboarding_completed": true,
+            "overlay_style": "live", "push_to_talk": false
         });
-
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
         assert!(apply_settings_migrations(&mut settings, &raw));
-        assert_eq!(
-            settings.transcribe_accelerator,
-            TranscribeAcceleratorSetting::Auto
-        );
-        assert_eq!(
-            settings.transcribe_gpu_device,
-            default_transcribe_gpu_device()
-        );
-        assert_eq!(
-            settings.settings_schema_version,
-            CURRENT_SETTINGS_SCHEMA_VERSION
-        );
-    }
-
-    #[test]
-    fn gpu_device_migration_keeps_current_schema_positive_selection() {
-        let mut settings = get_default_settings();
-        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
-        settings.transcribe_gpu_device = 2;
-
-        let raw = serde_json::json!({
-            "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
-            "onboarding_completed": false,
-            "whats_new_last_seen_version": default_whats_new_last_seen_version(),
-            "overlay_style": "live",
-            "transcribe_accelerator": "gpu",
-            "transcribe_gpu_device": 2
-        });
-
-        assert!(!apply_settings_migrations(&mut settings, &raw));
-        assert_eq!(
-            settings.transcribe_accelerator,
-            TranscribeAcceleratorSetting::Gpu
-        );
-        assert_eq!(settings.transcribe_gpu_device, 2);
+        assert!(!settings.onboarding_completed);
+        assert!(!settings.push_to_talk);
+        assert_eq!(settings.overlay_style, OverlayStyle::Minimal);
+        let saved = serde_json::to_value(&settings).unwrap();
+        assert!(saved.get("selected_model").is_none());
+        assert!(saved.get("transcribe_gpu_device").is_none());
+        assert!(!apply_settings_migrations(&mut settings, &saved));
     }
 
     #[test]
@@ -1625,5 +1536,105 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+}
+
+#[cfg(test)]
+mod transaction_tests {
+    use super::*;
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Mutex,
+    };
+    #[derive(Default)]
+    struct MemoryStore {
+        cache: Mutex<std::collections::HashMap<String, serde_json::Value>>,
+        disk: Mutex<std::collections::HashMap<String, serde_json::Value>>,
+        fail: AtomicBool,
+    }
+    impl SettingsStore for MemoryStore {
+        fn get(&self, key: &str) -> Option<serde_json::Value> {
+            self.cache.lock().unwrap().get(key).cloned()
+        }
+        fn set(&self, key: &str, value: serde_json::Value) {
+            self.cache.lock().unwrap().insert(key.into(), value);
+        }
+        fn delete(&self, key: &str) {
+            self.cache.lock().unwrap().remove(key);
+        }
+        fn save(&self) -> Result<(), String> {
+            if self.fail.load(Ordering::SeqCst) {
+                return Err("disk full".into());
+            }
+            *self.disk.lock().unwrap() = self.cache.lock().unwrap().clone();
+            Ok(())
+        }
+    }
+    #[test]
+    fn failed_save_restores_cache_and_token_without_modifying_disk() {
+        let store = MemoryStore::default();
+        set_store_token(&store, Some("original-token".into())).unwrap();
+        let previous = store.disk.lock().unwrap().clone();
+        store.fail.store(true, Ordering::SeqCst);
+        assert!(update_store(&store, |s| {
+            s.cloud_asr_api_key = "unsaved".into();
+            Ok(())
+        })
+        .is_err());
+        assert!(set_store_token(&store, Some("unsaved-token".into())).is_err());
+        assert_eq!(*store.cache.lock().unwrap(), previous);
+        assert_eq!(*store.disk.lock().unwrap(), previous);
+        store.fail.store(false, Ordering::SeqCst);
+        update_store(&store, |s| {
+            s.audio_feedback = true;
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(
+            read_settings(&store)
+                .0
+                .cloud_asr_screencast_restore_token
+                .as_deref(),
+            Some("original-token")
+        );
+    }
+    #[test]
+    fn concurrent_field_writes_and_portal_token_all_survive() {
+        let store = MemoryStore::default();
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                update_store(&store, |s| {
+                    s.cloud_asr_api_key = "kept-key".into();
+                    Ok(())
+                })
+                .unwrap()
+            });
+            scope.spawn(|| {
+                update_store(&store, |s| {
+                    s.history_limit = 321;
+                    Ok(())
+                })
+                .unwrap()
+            });
+            scope.spawn(|| set_store_token(&store, Some("portal-token".into())).unwrap());
+        });
+        let settings = read_settings(&store).0;
+        assert_eq!(settings.history_limit, 321);
+        assert_eq!(settings.cloud_asr_api_key, "kept-key");
+        assert_eq!(
+            settings.cloud_asr_screencast_restore_token.as_deref(),
+            Some("portal-token")
+        );
+    }
+    #[test]
+    fn failed_validation_does_not_modify_cache_or_disk() {
+        let store = MemoryStore::default();
+        assert!(update_store(&store, |s| {
+            s.history_limit = 1;
+            Err::<(), _>("invalid".into())
+        })
+        .is_err());
+        assert!(store.cache.lock().unwrap().is_empty());
+        assert!(store.disk.lock().unwrap().is_empty());
     }
 }

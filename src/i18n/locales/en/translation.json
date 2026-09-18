@@ -700,7 +700,9 @@
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
     "pasteFailed": "Text could not be pasted into the active application.",
-    "transcriptionFailedTitle": "Transcription Failed"
+    "transcriptionFailedTitle": "Transcription Failed",
+    "recordingSaveFailed": "The audio could not be saved to history. Transcription will continue.",
+    "settingsSaveFailed": "Could not save settings. Please try again."
   },
   "appLanguage": {
     "title": "Application Language",

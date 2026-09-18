@@ -71,7 +71,9 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
         <Dropdown
           options={autoSubmitOptions}
           selectedValue={selectedValue}
-          onSelect={handleAutoSubmitSelect}
+          onSelect={(value) => {
+            void handleAutoSubmitSelect(value).catch(() => {});
+          }}
           disabled={isUpdating("auto_submit") || isUpdating("auto_submit_key")}
         />
       </SettingContainer>

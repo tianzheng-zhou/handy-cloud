@@ -46,6 +46,16 @@ function App() {
   const refreshOutputDevices = useSettingsStore(
     (state) => state.refreshOutputDevices,
   );
+  useEffect(
+    () =>
+      useSettingsStore.subscribe(
+        (state) => state.lastError,
+        (error) => {
+          if (error) toast.error(t("errors.settingsSaveFailed"));
+        },
+      ),
+    [t],
+  );
   const hasCompletedPostOnboardingInit = useRef(false);
 
   useEffect(() => {
@@ -96,6 +106,15 @@ function App() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [settings?.debug_mode, updateSetting]);
+
+  useEffect(() => {
+    const unlisten = listen("recording-save-error", () => {
+      toast.warning(t("errors.recordingSaveFailed"));
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, [t]);
 
   // Listen for recording errors from the backend and show a toast
   useEffect(() => {

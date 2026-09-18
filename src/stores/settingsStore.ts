@@ -1,14 +1,10 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type {
-  AppSettings as Settings,
-  AudioDevice,
-  TranscribeAcceleratorSetting,
-  OrtAcceleratorSetting,
-} from "@/bindings";
+import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
+  lastError: { message: string } | null;
   settings: Settings | null;
   defaultSettings: Settings | null;
   isLoading: boolean;
@@ -79,6 +75,10 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
 const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
 } = {
+  cloud_asr_api_key: (value) => commands.changeCloudAsrApiKey(value as string),
+  cloud_asr_base_url: (value) =>
+    commands.changeCloudAsrBaseUrl(value as string),
+  cloud_asr_model: (value) => commands.changeCloudAsrModel(value as string),
   cloud_asr_screen_context: async (value) => {
     const result = await commands.changeCloudAsrScreenContext(value as boolean);
     if (result.status === "error") {
@@ -162,7 +162,8 @@ const settingUpdaters: {
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
-  log_level: (value) => commands.setLogLevel(value as any),
+  log_level: (value) =>
+    commands.setLogLevel(value as NonNullable<Settings["log_level"]>),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   theme: (value) => commands.changeThemeSetting(value as string),
   experimental_enabled: (value) =>
@@ -173,529 +174,282 @@ const settingUpdaters: {
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
-  transcribe_accelerator: (value) =>
-    commands.changeTranscribeAcceleratorSetting(
-      value as TranscribeAcceleratorSetting,
-    ),
-  ort_accelerator: (value) =>
-    commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
-  transcribe_gpu_device: (value) =>
-    commands.changeTranscribeGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
 };
 
-export const useSettingsStore = create<SettingsStore>()(
-  subscribeWithSelector((set, get) => ({
-    settings: null,
-    defaultSettings: null,
-    isLoading: true,
-    isUpdating: {},
-    audioDevices: [],
-    outputDevices: [],
-    customSounds: { start: false, stop: false },
-    postProcessModelOptions: {},
+/** Unwrap commands consistently: generated bindings resolve even when Rust returns Err. */
+export function unwrap<T>(
+  result: { status: "ok"; data: T } | { status: "error"; error: unknown },
+): T {
+  if (result.status === "error") throw new Error(String(result.error));
+  return result.data;
+}
 
-    // Internal setters
-    setSettings: (settings) => set({ settings }),
-    setDefaultSettings: (defaultSettings) => set({ defaultSettings }),
-    setLoading: (isLoading) => set({ isLoading }),
-    setUpdating: (key, updating) =>
-      set((state) => ({
-        isUpdating: { ...state.isUpdating, [key]: updating },
-      })),
-    setAudioDevices: (audioDevices) => set({ audioDevices }),
-    setOutputDevices: (outputDevices) => set({ outputDevices }),
-    setCustomSounds: (customSounds) => set({ customSounds }),
-
-    // Getters
-    getSetting: (key) => get().settings?.[key],
-    isUpdatingKey: (key) => get().isUpdating[key] || false,
-
-    // Load settings from store
-    refreshSettings: async () => {
-      try {
-        const result = await commands.getAppSettings();
-        if (result.status === "ok") {
-          const settings = result.data;
-          const normalizedSettings: Settings = {
-            ...settings,
-            always_on_microphone: settings.always_on_microphone ?? false,
-            selected_microphone: settings.selected_microphone ?? "Default",
-            clamshell_microphone: settings.clamshell_microphone ?? "Default",
-            selected_output_device:
-              settings.selected_output_device ?? "Default",
-          };
-          set({ settings: normalizedSettings, isLoading: false });
-        } else {
-          console.error("Failed to load settings:", result.error);
-          set({ isLoading: false });
-        }
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-        set({ isLoading: false });
-      }
-    },
-
-    // Load audio devices
-    refreshAudioDevices: async () => {
-      try {
-        const result = await commands.getAvailableMicrophones();
-        if (result.status === "ok") {
-          const devicesWithDefault = [
-            DEFAULT_AUDIO_DEVICE,
-            ...result.data.filter(
-              (d) => d.name !== "Default" && d.name !== "default",
-            ),
-          ];
-          set({ audioDevices: devicesWithDefault });
-        } else {
-          set({ audioDevices: [DEFAULT_AUDIO_DEVICE] });
-        }
-      } catch (error) {
-        console.error("Failed to load audio devices:", error);
-        set({ audioDevices: [DEFAULT_AUDIO_DEVICE] });
-      }
-    },
-
-    // Load output devices
-    refreshOutputDevices: async () => {
-      try {
-        const result = await commands.getAvailableOutputDevices();
-        if (result.status === "ok") {
-          const devicesWithDefault = [
-            DEFAULT_AUDIO_DEVICE,
-            ...result.data.filter(
-              (d) => d.name !== "Default" && d.name !== "default",
-            ),
-          ];
-          set({ outputDevices: devicesWithDefault });
-        } else {
-          set({ outputDevices: [DEFAULT_AUDIO_DEVICE] });
-        }
-      } catch (error) {
-        console.error("Failed to load output devices:", error);
-        set({ outputDevices: [DEFAULT_AUDIO_DEVICE] });
-      }
-    },
-
-    // Play a test sound
-    playTestSound: async (soundType: "start" | "stop") => {
-      try {
-        await commands.playTestSound(soundType);
-      } catch (error) {
-        console.error(`Failed to play test sound (${soundType}):`, error);
-      }
-    },
-
-    checkCustomSounds: async () => {
-      try {
-        const sounds = await commands.checkCustomSounds();
-        get().setCustomSounds(sounds);
-      } catch (error) {
-        console.error("Failed to check custom sounds:", error);
-      }
-    },
-
-    // Update a specific setting
-    updateSetting: async <K extends keyof Settings>(
-      key: K,
-      value: Settings[K],
-    ) => {
-      const { settings, setUpdating } = get();
-      const updateKey = String(key);
-      const originalValue = settings?.[key];
-
-      setUpdating(updateKey, true);
-
-      try {
-        set((state) => ({
-          settings: state.settings ? { ...state.settings, [key]: value } : null,
-        }));
-
-        const updater = settingUpdaters[key];
-        if (updater) {
-          await updater(value);
-        } else if (
-          key !== "bindings" &&
-          key !== "cloud_asr_api_key" &&
-          key !== "cloud_asr_base_url" &&
-          key !== "cloud_asr_model" &&
-          key !== "cloud_asr_screen_context" &&
-          key !== "cloud_asr_screen_capture_method"
-        ) {
-          console.warn(`No handler for setting: ${String(key)}`);
-        }
-      } catch (error) {
-        console.error(`Failed to update setting ${String(key)}:`, error);
-        if (settings) {
-          set({ settings: { ...settings, [key]: originalValue } });
-        }
-        throw error;
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    // Reset a setting to its default value
-    resetSetting: async (key) => {
-      const { defaultSettings } = get();
-      if (defaultSettings) {
-        const defaultValue = defaultSettings[key];
-        if (defaultValue !== undefined) {
-          await get().updateSetting(key, defaultValue as any);
-        }
-      }
-    },
-
-    // Update a specific binding
-    updateBinding: async (id, binding) => {
-      const { settings, setUpdating } = get();
-      const updateKey = `binding_${id}`;
-      const originalBinding = settings?.bindings?.[id]?.current_binding;
-
-      setUpdating(updateKey, true);
-
-      try {
-        // Optimistic update
-        set((state) => ({
-          settings: state.settings
-            ? {
-                ...state.settings,
-                bindings: {
-                  ...state.settings.bindings,
-                  [id]: {
-                    ...state.settings.bindings?.[id]!,
-                    current_binding: binding,
-                  },
-                },
-              }
-            : null,
-        }));
-
-        const result = await commands.changeBinding(id, binding);
-
-        // Check if the command executed successfully
-        if (result.status === "error") {
-          throw new Error(result.error);
-        }
-
-        // Check if the binding change was successful
-        if (!result.data.success) {
-          throw new Error(result.data.error || "Failed to update binding");
-        }
-      } catch (error) {
-        console.error(`Failed to update binding ${id}:`, error);
-
-        // Rollback on error
-        if (originalBinding && get().settings) {
+export const createSettingsStore = () => {
+  let initialization: Promise<void> | undefined;
+  const queues = new Map<string, Promise<void>>();
+  const revisions = new Map<string, number>();
+  return create<SettingsStore>()(
+    subscribeWithSelector((set, get) => {
+      const report = (error: unknown) =>
+        set({ lastError: { message: String(error) } });
+      // Attach a rejection handler for fire-and-forget controls while preserving the
+      // original rejected promise for callers that need to stop a sequence on failure.
+      const run = (key: string, task: () => Promise<void>) => {
+        get().setUpdating(key, true);
+        revisions.set(key, (revisions.get(key) ?? 0) + 1);
+        const pending = (queues.get(key) ?? Promise.resolve())
+          .catch(() => {})
+          .then(task);
+        queues.set(key, pending);
+        void pending.catch(report).finally(() => {
+          if (queues.get(key) === pending) {
+            queues.delete(key);
+            get().setUpdating(key, false);
+          }
+        });
+        return pending;
+      };
+      const mergeFields = (settings: Settings, fields: (keyof Settings)[]) => {
+        set((state) => {
+          if (!state.settings) return { settings };
+          const merged = { ...state.settings };
+          for (const field of fields)
+            Object.assign(merged, { [field]: settings[field] });
+          return { settings: merged };
+        });
+      };
+      const updateFields = (
+        key: string,
+        fields: (keyof Settings)[],
+        command: () => Promise<unknown>,
+      ) =>
+        run(key, async () => {
+          checkResult(await command());
+          mergeFields(unwrap(await commands.getAppSettings()), fields);
+        });
+      return {
+        settings: null,
+        defaultSettings: null,
+        isLoading: true,
+        isUpdating: {},
+        lastError: null,
+        audioDevices: [],
+        outputDevices: [],
+        customSounds: { start: false, stop: false },
+        postProcessModelOptions: {},
+        setSettings: (settings) => set({ settings }),
+        setDefaultSettings: (defaultSettings) => set({ defaultSettings }),
+        setLoading: (isLoading) => set({ isLoading }),
+        setUpdating: (key, value) =>
           set((state) => ({
-            settings: state.settings
-              ? {
-                  ...state.settings,
-                  bindings: {
-                    ...state.settings.bindings,
-                    [id]: {
-                      ...state.settings.bindings?.[id]!,
-                      current_binding: originalBinding,
-                    },
-                  },
-                }
-              : null,
-          }));
-        }
-
-        // Re-throw to let the caller know it failed
-        throw error;
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    // Reset a specific binding
-    resetBinding: async (id) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = `binding_${id}`;
-
-      setUpdating(updateKey, true);
-
-      try {
-        await commands.resetBinding(id);
-        await refreshSettings();
-      } catch (error) {
-        console.error(`Failed to reset binding ${id}:`, error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    setPostProcessProvider: async (providerId) => {
-      const {
-        settings,
-        setUpdating,
-        refreshSettings,
-        setPostProcessModelOptions,
-      } = get();
-      const updateKey = "post_process_provider_id";
-      const previousId = settings?.post_process_provider_id ?? null;
-
-      setUpdating(updateKey, true);
-
-      if (settings) {
-        set((state) => ({
-          settings: state.settings
-            ? { ...state.settings, post_process_provider_id: providerId }
-            : null,
-        }));
-      }
-
-      // Clear cached model options for the new provider so the dropdown
-      // doesn't show stale models from a previous fetch or base_url.
-      setPostProcessModelOptions(providerId, []);
-
-      try {
-        await commands.setPostProcessProvider(providerId);
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to set post-process provider:", error);
-        if (previousId !== null) {
+            isUpdating: { ...state.isUpdating, [key]: value },
+          })),
+        setAudioDevices: (audioDevices) => set({ audioDevices }),
+        setOutputDevices: (outputDevices) => set({ outputDevices }),
+        setCustomSounds: (customSounds) => set({ customSounds }),
+        getSetting: (key) => get().settings?.[key],
+        isUpdatingKey: (key) => !!get().isUpdating[key],
+        refreshSettings: async () => {
+          const before = new Map(revisions);
+          try {
+            const settings = unwrap(await commands.getAppSettings());
+            const fields = (Object.keys(settings) as (keyof Settings)[]).filter(
+              (key) =>
+                !queues.has(key) &&
+                before.get(key) === revisions.get(key) &&
+                !(
+                  key.startsWith("post_process_") && queues.has("post_process")
+                ),
+            );
+            mergeFields(settings, fields);
+          } catch (error) {
+            report(error);
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+        loadDefaultSettings: async () => {
+          try {
+            set({
+              defaultSettings: unwrap(await commands.getDefaultSettings()),
+            });
+          } catch (error) {
+            report(error);
+          }
+        },
+        initialize: () => {
+          initialization ??= Promise.all([
+            get().loadDefaultSettings(),
+            get().refreshSettings(),
+            get().checkCustomSounds(),
+          ]).then(() => {});
+          return initialization;
+        },
+        refreshAudioDevices: async () => {
+          try {
+            set({
+              audioDevices: [
+                DEFAULT_AUDIO_DEVICE,
+                ...unwrap(await commands.getAvailableMicrophones()).filter(
+                  (d) => !["Default", "default"].includes(d.name),
+                ),
+              ],
+            });
+          } catch {
+            set({ audioDevices: [DEFAULT_AUDIO_DEVICE] });
+          }
+        },
+        refreshOutputDevices: async () => {
+          try {
+            set({
+              outputDevices: [
+                DEFAULT_AUDIO_DEVICE,
+                ...unwrap(await commands.getAvailableOutputDevices()).filter(
+                  (d) => !["Default", "default"].includes(d.name),
+                ),
+              ],
+            });
+          } catch {
+            set({ outputDevices: [DEFAULT_AUDIO_DEVICE] });
+          }
+        },
+        checkCustomSounds: async () => {
+          try {
+            set({ customSounds: await commands.checkCustomSounds() });
+          } catch (error) {
+            report(error);
+          }
+        },
+        playTestSound: (sound) =>
+          run("test_sound", async () => {
+            checkResult(await commands.playTestSound(sound));
+          }),
+        updateSetting: (key, value) =>
+          run(key, async () => {
+            const previous = get().settings?.[key];
+            const updater = settingUpdaters[key];
+            if (!updater) throw new Error(`Unsupported setting: ${key}`);
+            set((state) => ({
+              settings: state.settings
+                ? { ...state.settings, [key]: value }
+                : null,
+            }));
+            try {
+              checkResult(await updater(value));
+            } catch (error) {
+              // Only restore this field; concurrent successful writes must survive.
+              set((state) => ({
+                settings: state.settings
+                  ? { ...state.settings, [key]: previous }
+                  : null,
+              }));
+              throw error;
+            }
+          }),
+        resetSetting: (key) => {
+          const defaults = get().defaultSettings;
+          return defaults
+            ? get().updateSetting(key, defaults[key])
+            : Promise.resolve();
+        },
+        updateBinding: (id, binding) =>
+          updateFields("bindings", ["bindings"], async () => {
+            const result = unwrap(await commands.changeBinding(id, binding));
+            if (!result.success)
+              throw new Error(result.error ?? "Failed to update binding");
+          }),
+        resetBinding: (id) =>
+          updateFields("bindings", ["bindings"], () =>
+            commands.resetBinding(id),
+          ),
+        setPostProcessProvider: (providerId) =>
+          updateFields("post_process", ["post_process_provider_id"], () =>
+            commands.setPostProcessProvider(providerId),
+          ),
+        updatePostProcessSetting: (type, providerId, value) =>
+          updateFields(
+            "post_process",
+            [
+              "post_process_providers",
+              "post_process_api_keys",
+              "post_process_models",
+            ],
+            async () => {
+              const result =
+                type === "base_url"
+                  ? await commands.changePostProcessBaseUrlSetting(
+                      providerId,
+                      value,
+                    )
+                  : type === "api_key"
+                    ? await commands.changePostProcessApiKeySetting(
+                        providerId,
+                        value,
+                      )
+                    : await commands.changePostProcessModelSetting(
+                        providerId,
+                        value,
+                      );
+              checkResult(result);
+              if (type !== "model")
+                get().setPostProcessModelOptions(providerId, []);
+            },
+          ),
+        updatePostProcessBaseUrl: (id, value) =>
+          get().updatePostProcessSetting("base_url", id, value),
+        updatePostProcessApiKey: (id, value) =>
+          get().updatePostProcessSetting("api_key", id, value),
+        updatePostProcessModel: (id, value) =>
+          get().updatePostProcessSetting("model", id, value),
+        fetchPostProcessModels: async (providerId) => {
+          const key = `post_process_models_fetch:${providerId}`;
+          get().setUpdating(key, true);
+          try {
+            const models = unwrap(
+              await commands.fetchPostProcessModels(providerId),
+            );
+            get().setPostProcessModelOptions(providerId, models);
+            return models;
+          } catch (error) {
+            report(error);
+            return [];
+          } finally {
+            get().setUpdating(key, false);
+          }
+        },
+        setPostProcessModelOptions: (id, models) =>
           set((state) => ({
-            settings: state.settings
-              ? { ...state.settings, post_process_provider_id: previousId }
-              : null,
-          }));
-        }
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
+            postProcessModelOptions: {
+              ...state.postProcessModelOptions,
+              [id]: models,
+            },
+          })),
+        updateCloudAsrApiKey: (value) =>
+          get().updateSetting("cloud_asr_api_key", value),
+        updateCloudAsrBaseUrl: (value) =>
+          get().updateSetting("cloud_asr_base_url", value),
+        updateCloudAsrModel: (value) =>
+          get().updateSetting("cloud_asr_model", value),
+        updateCloudAsrScreenContext: (value) =>
+          get().updateSetting("cloud_asr_screen_context", value),
+      };
+    }),
+  );
+};
 
-    // Generic updater for post-processing provider settings
-    updatePostProcessSetting: async (
-      settingType: "base_url" | "api_key" | "model",
-      providerId: string,
-      value: string,
-    ) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_${settingType}:${providerId}`;
+function checkResult(result: unknown): void {
+  if (
+    result &&
+    typeof result === "object" &&
+    "status" in result &&
+    result.status === "error"
+  ) {
+    throw new Error(
+      String("error" in result ? result.error : "Command failed"),
+    );
+  }
+}
 
-      setUpdating(updateKey, true);
-
-      try {
-        if (settingType === "base_url") {
-          await commands.changePostProcessBaseUrlSetting(providerId, value);
-        } else if (settingType === "api_key") {
-          await commands.changePostProcessApiKeySetting(providerId, value);
-        } else if (settingType === "model") {
-          await commands.changePostProcessModelSetting(providerId, value);
-        }
-        await refreshSettings();
-      } catch (error) {
-        console.error(
-          `Failed to update post-process ${settingType.replace("_", " ")}:`,
-          error,
-        );
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    updatePostProcessBaseUrl: async (providerId, baseUrl) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_base_url:${providerId}`;
-
-      setUpdating(updateKey, true);
-
-      try {
-        // Persist the new base URL first.
-        const urlResult = await commands.changePostProcessBaseUrlSetting(
-          providerId,
-          baseUrl,
-        );
-        if (urlResult.status === "error") {
-          console.error("Failed to persist base URL:", urlResult.error);
-          return;
-        }
-
-        // Reset the stored model since the previous value is almost certainly
-        // invalid for the new endpoint (e.g. switching Custom from Groq to
-        // Cerebras). Only proceed if the reset succeeds.
-        const modelResult = await commands.changePostProcessModelSetting(
-          providerId,
-          "",
-        );
-        if (modelResult.status === "error") {
-          console.error("Failed to reset model setting:", modelResult.error);
-          return;
-        }
-
-        // Clear cached model options only after both backend writes succeed.
-        set((state) => ({
-          postProcessModelOptions: {
-            ...state.postProcessModelOptions,
-            [providerId]: [],
-          },
-        }));
-
-        // Single refresh after both backend writes.
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update post-process base URL:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    updatePostProcessApiKey: async (providerId, apiKey) => {
-      // Clear cached models when API key changes - user should click refresh after
-      set((state) => ({
-        postProcessModelOptions: {
-          ...state.postProcessModelOptions,
-          [providerId]: [],
-        },
-      }));
-      return get().updatePostProcessSetting("api_key", providerId, apiKey);
-    },
-
-    updatePostProcessModel: async (providerId, model) => {
-      return get().updatePostProcessSetting("model", providerId, model);
-    },
-
-    fetchPostProcessModels: async (providerId) => {
-      const updateKey = `post_process_models_fetch:${providerId}`;
-      const { setUpdating, setPostProcessModelOptions } = get();
-
-      setUpdating(updateKey, true);
-
-      try {
-        // Call Tauri backend command instead of fetch
-        const result = await commands.fetchPostProcessModels(providerId);
-        if (result.status === "ok") {
-          setPostProcessModelOptions(providerId, result.data);
-          return result.data;
-        } else {
-          console.error("Failed to fetch models:", result.error);
-          return [];
-        }
-      } catch (error) {
-        console.error("Failed to fetch models:", error);
-        // Don't cache empty array on error - let user retry
-        return [];
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    setPostProcessModelOptions: (providerId, models) =>
-      set((state) => ({
-        postProcessModelOptions: {
-          ...state.postProcessModelOptions,
-          [providerId]: models,
-        },
-      })),
-
-    updateCloudAsrApiKey: async (apiKey) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = "cloud_asr_api_key";
-      setUpdating(updateKey, true);
-      try {
-        const result = await commands.changeCloudAsrApiKey(apiKey);
-        if (result.status === "error") {
-          console.error("Failed to update cloud ASR API key:", result.error);
-          return;
-        }
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update cloud ASR API key:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    updateCloudAsrBaseUrl: async (baseUrl) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = "cloud_asr_base_url";
-      setUpdating(updateKey, true);
-      try {
-        const result = await commands.changeCloudAsrBaseUrl(baseUrl);
-        if (result.status === "error") {
-          console.error("Failed to update cloud ASR base URL:", result.error);
-          return;
-        }
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update cloud ASR base URL:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    updateCloudAsrModel: async (model) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = "cloud_asr_model";
-      setUpdating(updateKey, true);
-      try {
-        const result = await commands.changeCloudAsrModel(model);
-        if (result.status === "error") {
-          console.error("Failed to update cloud ASR model:", result.error);
-          return;
-        }
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update cloud ASR model:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    updateCloudAsrScreenContext: async (enabled) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = "cloud_asr_screen_context";
-      setUpdating(updateKey, true);
-      try {
-        const result = await commands.changeCloudAsrScreenContext(enabled);
-        if (result.status === "error") {
-          console.error(
-            "Failed to update cloud ASR screen context:",
-            result.error,
-          );
-          return;
-        }
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update cloud ASR screen context:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
-    },
-
-    // Load default settings from Rust
-    loadDefaultSettings: async () => {
-      try {
-        const result = await commands.getDefaultSettings();
-        if (result.status === "ok") {
-          set({ defaultSettings: result.data });
-        } else {
-          console.error("Failed to load default settings:", result.error);
-        }
-      } catch (error) {
-        console.error("Failed to load default settings:", error);
-      }
-    },
-
-    // Initialize everything
-    initialize: async () => {
-      const { refreshSettings, checkCustomSounds, loadDefaultSettings } = get();
-
-      // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
-      // is responsible for calling refreshAudioDevices/refreshOutputDevices
-      // after onboarding completes. This avoids triggering permission dialogs
-      // on macOS before the user is ready.
-      await Promise.all([
-        loadDefaultSettings(),
-        refreshSettings(),
-        checkCustomSounds(),
-      ]);
-    },
-  })),
-);
+export const useSettingsStore = createSettingsStore();

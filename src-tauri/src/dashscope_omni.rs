@@ -5,10 +5,28 @@
 
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use futures_util::StreamExt;
-use log::{debug, info, warn};
+use log::{debug, info};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
-use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::json;
+use std::sync::OnceLock;
+
+#[path = "dashscope_sse.rs"]
+mod sse;
+
+static HTTP_CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+
+fn http_client() -> Result<&'static reqwest::Client, String> {
+    HTTP_CLIENT
+        .get_or_init(|| {
+            reqwest::Client::builder()
+                .connect_timeout(std::time::Duration::from_secs(10))
+                .timeout(std::time::Duration::from_secs(180))
+                .build()
+                .map_err(|error| format!("Failed to build HTTP client: {error}"))
+        })
+        .as_ref()
+        .map_err(Clone::clone)
+}
 
 pub const DEFAULT_BASE_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 pub const MODEL_FLASH: &str = "qwen3.5-omni-flash";
@@ -47,28 +65,6 @@ const TRANSCRIBE_PROMPT: &str = "逐字转写上面的音频。只输出转写�
 
 const TRANSCRIBE_WITH_SCREEN_PROMPT: &str =
     "逐字转写上面的音频。截图只用于理解上下文，不要转录截图里的内容。只输出转写结果本身。";
-
-#[derive(Debug, Deserialize)]
-struct StreamChunk {
-    choices: Option<Vec<StreamChoice>>,
-    error: Option<ApiErrorBody>,
-}
-
-#[derive(Debug, Deserialize)]
-struct StreamChoice {
-    delta: Option<StreamDelta>,
-}
-
-#[derive(Debug, Deserialize)]
-struct StreamDelta {
-    content: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ApiErrorBody {
-    message: Option<String>,
-    code: Option<String>,
-}
 
 /// Transcribe a WAV file (bytes) via DashScope Qwen Omni.
 ///
@@ -163,11 +159,7 @@ pub async fn transcribe_wav(
             .map_err(|e| format!("Invalid API key header: {}", e))?,
     );
 
-    let client = reqwest::Client::builder()
-        .default_headers(headers)
-        .timeout(std::time::Duration::from_secs(180))
-        .build()
-        .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+    let client = http_client()?;
 
     let screen_bytes = screen_jpeg.map(|b| b.len()).unwrap_or(0);
     if screen_bytes > 0 {
@@ -186,9 +178,19 @@ pub async fn transcribe_wav(
     }
     debug!("DashScope Omni url={}", url);
 
+    request_transcription(client, &url, headers, &body).await
+}
+
+async fn request_transcription(
+    client: &reqwest::Client,
+    url: &str,
+    headers: HeaderMap,
+    body: &serde_json::Value,
+) -> Result<String, String> {
     let response = client
-        .post(&url)
-        .json(&body)
+        .post(url)
+        .headers(headers)
+        .json(body)
         .send()
         .await
         .map_err(|e| format!("DashScope request failed: {}", e))?;
@@ -205,77 +207,15 @@ pub async fn transcribe_wav(
         return Err(format!("DashScope API error ({}): {}", status, err_body));
     }
 
-    let mut text = String::new();
+    let mut decoder = sse::Decoder::default();
     let mut stream = response.bytes_stream();
-    let mut buffer = String::new();
-
     while let Some(item) = stream.next().await {
         let chunk = item.map_err(|e| format!("DashScope stream error: {}", e))?;
-        buffer.push_str(&String::from_utf8_lossy(&chunk));
-
-        while let Some(pos) = buffer.find('\n') {
-            let line = buffer[..pos].trim_end_matches('\r').to_string();
-            buffer = buffer[pos + 1..].to_string();
-            if let Some(piece) = parse_sse_line(&line)? {
-                text.push_str(&piece);
-            }
+        if decoder.push(&chunk)? {
+            break;
         }
     }
-
-    // Flush remaining buffer
-    if !buffer.trim().is_empty() {
-        if let Some(piece) = parse_sse_line(buffer.trim())? {
-            text.push_str(&piece);
-        }
-    }
-
-    let text = text.trim().to_string();
-    if text.is_empty() {
-        return Err("DashScope returned empty transcription".to_string());
-    }
-    Ok(text)
-}
-
-fn parse_sse_line(line: &str) -> Result<Option<String>, String> {
-    let line = line.trim();
-    if line.is_empty() || line.starts_with(':') {
-        return Ok(None);
-    }
-    let Some(data) = line.strip_prefix("data:") else {
-        return Ok(None);
-    };
-    let data = data.trim();
-    if data.is_empty() || data == "[DONE]" {
-        return Ok(None);
-    }
-
-    let chunk: StreamChunk = serde_json::from_str(data).map_err(|e| {
-        warn!("Failed to parse DashScope SSE chunk: {} ({})", e, data);
-        format!("Invalid DashScope stream JSON: {}", e)
-    })?;
-
-    if let Some(err) = chunk.error {
-        return Err(format!(
-            "DashScope stream error: {} ({})",
-            err.message.unwrap_or_else(|| "unknown".into()),
-            err.code.unwrap_or_else(|| "unknown".into())
-        ));
-    }
-
-    let content = chunk
-        .choices
-        .into_iter()
-        .flatten()
-        .filter_map(|c| c.delta.and_then(|d| d.content))
-        .collect::<String>();
-
-    if content.is_empty() {
-        // Some chunks only carry usage / role — ignore quietly.
-        let _: Result<Value, _> = serde_json::from_str(data);
-        Ok(None)
-    } else {
-        Ok(Some(content))
-    }
+    decoder.finish()
 }
 
 /// Convenience: load WAV from path and transcribe.
@@ -287,7 +227,8 @@ pub async fn transcribe_wav_file(
     language_hint: Option<&str>,
     screen_jpeg: Option<&[u8]>,
 ) -> Result<String, String> {
-    let bytes = std::fs::read(wav_path)
+    let bytes = tokio::fs::read(wav_path)
+        .await
         .map_err(|e| format!("Failed to read WAV {}: {}", wav_path.display(), e))?;
     transcribe_wav(api_key, base_url, model, &bytes, language_hint, screen_jpeg).await
 }
@@ -297,21 +238,159 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_done() {
-        assert!(parse_sse_line("data: [DONE]").unwrap().is_none());
-    }
-
-    #[test]
-    fn parse_content() {
-        let line = r#"data: {"choices":[{"delta":{"content":"你好"}}]}"#;
-        assert_eq!(parse_sse_line(line).unwrap().as_deref(), Some("你好"));
-    }
-
-    #[test]
     fn screen_context_only_for_omni_models() {
         assert!(supports_screen_context(MODEL_FLASH));
         assert!(supports_screen_context(MODEL_PLUS));
         assert!(!supports_screen_context("qwen-audio-asr"));
         assert!(!supports_screen_context(""));
+    }
+}
+
+#[cfg(test)]
+mod http_tests {
+    use super::*;
+    use std::{
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        },
+        time::Duration,
+    };
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+    };
+
+    // One request per server. No external services or real credentials involved.
+    async fn server(
+        status: &str,
+        body: Vec<u8>,
+        stall: bool,
+    ) -> (String, tokio::task::JoinHandle<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let status = status.to_owned();
+        let task = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = Vec::new();
+            let mut byte = [0];
+            while !request.ends_with(b"\r\n\r\n") {
+                socket.read_exact(&mut byte).await.unwrap();
+                request.push(byte[0]);
+            }
+            let header = String::from_utf8(request).unwrap();
+            let len = header
+                .lines()
+                .find_map(|line| {
+                    line.to_lowercase()
+                        .strip_prefix("content-length: ")
+                        .map(|v| v.parse::<usize>().unwrap())
+                })
+                .unwrap();
+            let mut payload = vec![0; len];
+            socket.read_exact(&mut payload).await.unwrap();
+            assert_eq!(
+                serde_json::from_slice::<serde_json::Value>(&payload).unwrap()["stream"],
+                true
+            );
+            if stall {
+                // Cancellation/timeout must close the request while the server is pending.
+                let closed = tokio::time::timeout(Duration::from_secs(2), socket.read(&mut byte))
+                    .await
+                    .expect("request was not released")
+                    .unwrap();
+                assert_eq!(closed, 0);
+            } else {
+                socket.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).as_bytes()).await.unwrap();
+                for byte in body {
+                    if socket.write_all(&[byte]).await.is_err() {
+                        break;
+                    }
+                    tokio::task::yield_now().await;
+                }
+            }
+            header
+        });
+        (url, task)
+    }
+
+    #[tokio::test]
+    async fn chinese_http_stream_and_request_scoped_authentication() {
+        for key in ["test-first", "test-second"] {
+            let (url, task) = server("200 OK", "data: {\"choices\":[{\"delta\":{\"content\":\"你好🌍\"}}]}\r\n\r\ndata: [DONE]\r\n\r\n".as_bytes().to_vec(), false).await;
+            assert_eq!(
+                transcribe_wav(key, &url, MODEL_FLASH, b"wav", None, None)
+                    .await
+                    .unwrap(),
+                "你好🌍"
+            );
+            assert!(task.await.unwrap().contains(&format!("Bearer {key}")));
+        }
+    }
+
+    #[tokio::test]
+    async fn rejects_authentication_errors_and_truncated_http_streams() {
+        for (status, body, expected) in [
+            ("401 Unauthorized", "unauthorized", "authentication failed"),
+            (
+                "200 OK",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"未完成\"}}]}\n\n",
+                "without a completion marker",
+            ),
+        ] {
+            let (url, task) = server(status, body.as_bytes().to_vec(), false).await;
+            let error = transcribe_wav("test", &url, MODEL_FLASH, b"wav", None, None)
+                .await
+                .unwrap_err();
+            assert!(error.to_lowercase().contains(expected), "{error}");
+            task.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn timeout_releases_pending_http_request() {
+        let (url, task) = server("200 OK", vec![], true).await;
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_millis(100))
+            .build()
+            .unwrap();
+        assert!(
+            request_transcription(&client, &url, HeaderMap::new(), &json!({"stream": true}))
+                .await
+                .is_err()
+        );
+        task.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn cancel_drops_cloud_request_and_allows_next_request() {
+        let (url, task) = server("200 OK", vec![], true).await;
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let flag = cancelled.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            flag.store(true, Ordering::SeqCst);
+        });
+        let result = crate::actions::complete_unless_cancelled(
+            transcribe_wav("test", &url, MODEL_FLASH, b"wav", None, None),
+            || cancelled.load(Ordering::SeqCst),
+        )
+        .await;
+        assert!(result.is_none());
+        task.await.unwrap();
+        let (url, task) = server(
+            "200 OK",
+            b"data: {\"choices\":[{\"delta\":{\"content\":\"next\"}}]}\n\ndata: [DONE]\n\n"
+                .to_vec(),
+            false,
+        )
+        .await;
+        assert_eq!(
+            transcribe_wav("test", &url, MODEL_FLASH, b"wav", None, None)
+                .await
+                .unwrap(),
+            "next"
+        );
+        task.await.unwrap();
     }
 }

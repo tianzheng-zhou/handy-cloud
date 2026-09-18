@@ -32,7 +32,8 @@ const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
 export const CloudAsrSettings: React.FC = () => {
   const { t } = useTranslation();
   const settings = useSettingsStore((state) => state.settings);
-  const isUpdatingKey = useSettingsStore((state) => state.isUpdatingKey);
+  const updating = useSettingsStore((state) => state.isUpdating);
+  const isUpdatingKey = (key: string) => !!updating[key];
   const updateCloudAsrApiKey = useSettingsStore(
     (state) => state.updateCloudAsrApiKey,
   );

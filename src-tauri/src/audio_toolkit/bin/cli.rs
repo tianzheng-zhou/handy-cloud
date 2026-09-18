@@ -5,7 +5,6 @@ use handy_app_lib::audio_toolkit::{
     audio::{list_input_devices, CpalDeviceInfo},
     vad::{
         SmoothedVad, VAD_OFFLINE_HANGOVER_FRAMES, VAD_ONSET_FRAMES, VAD_PREFILL_FRAMES,
-        VAD_STREAMING_HANGOVER_FRAMES,
     },
     AudioRecorder, SileroVad, VadPolicy,
 };
@@ -186,10 +185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         VAD_ONSET_FRAMES,
     );
     let recorder = AudioRecorder::new()?.with_vad(
-        Box::new(smoothed_vad),
-        VAD_OFFLINE_HANGOVER_FRAMES,
-        VAD_STREAMING_HANGOVER_FRAMES,
-    );
+        Box::new(smoothed_vad));
     let mut state = RecorderState::new(recorder);
 
     let mut devices = list_input_devices()?;
