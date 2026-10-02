@@ -76,7 +76,7 @@
   "settings": {
     "cloudAsr": {
       "title": "Cloud ASR",
-      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen3.5-Omni.",
+      "description": "Configure Alibaba Bailian (DashScope) cloud transcription with Qwen Omni.",
       "groupTitle": "Connection",
       "apiKey": {
         "title": "API Key",
@@ -91,10 +91,14 @@
       "model": {
         "title": "Model",
         "groupTitle": "Models",
-        "description": "Qwen3.5-Omni Flash is faster; Plus offers higher accuracy.",
+        "description": "Choose Qwen3.8-Omni Flash or Qwen3.5-Omni Flash / Plus.",
         "placeholder": "Select a model…"
       },
       "models": {
+        "flash38": {
+          "name": "Qwen3.8-Omni Flash",
+          "description": "Audio and image understanding for transcription with optional screen context. Thinking is disabled for dictation."
+        },
         "flash": {
           "name": "Qwen3.5-Omni Flash",
           "description": "Fast and cost-efficient. Best default for everyday dictation."
@@ -276,7 +280,7 @@
       },
       "screenContext": {
         "label": "Use screen as context",
-        "description": "Applies only to Qwen3.5-Omni Flash and Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64. Other models ignore this setting.",
+        "description": "Applies to Qwen3.8-Omni Flash and Qwen3.5-Omni Flash / Plus. When enabled, a screen image is captured with your audio and uploaded as JPEG Base64.",
         "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
         "method": {
           "title": "Screen capture method",

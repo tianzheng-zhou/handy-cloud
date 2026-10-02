@@ -76,7 +76,7 @@
   "settings": {
     "cloudAsr": {
       "title": "云端语音识别",
-      "description": "配置阿里云百炼（DashScope）Qwen3.5-Omni 云端转写。",
+      "description": "配置阿里云百炼（DashScope）Qwen Omni 云端转写。",
       "groupTitle": "连接设置",
       "apiKey": {
         "title": "API Key",
@@ -91,10 +91,14 @@
       "model": {
         "title": "模型",
         "groupTitle": "模型选择",
-        "description": "Qwen3.5-Omni Flash 速度更快，Plus 的准确度更高。",
+        "description": "支持 Qwen3.8-Omni Flash 和 Qwen3.5-Omni Flash / Plus。",
         "placeholder": "选择模型…"
       },
       "models": {
+        "flash38": {
+          "name": "Qwen3.8-Omni Flash",
+          "description": "支持音频和图片理解，可结合屏幕上下文进行转写。语音输入时关闭深度思考。"
+        },
         "flash": {
           "name": "Qwen3.5-Omni Flash",
           "description": "速度快、成本低，适合日常语音输入。"
@@ -276,7 +280,7 @@
       },
       "screenContext": {
         "label": "使用屏幕作为上下文",
-        "description": "仅适用于 Qwen3.5-Omni Flash 与 Plus。开启后会在录音时截取屏幕图像，并以 JPEG Base64 与音频一并上传。其他模型会忽略此设置。",
+        "description": "适用于 Qwen3.8-Omni Flash 和 Qwen3.5-Omni Flash / Plus。开启后会在录音时截取屏幕图像，并以 JPEG Base64 与音频一并上传。",
         "authorizeFailed": "无法授权屏幕捕获。请保持 Handy Cloud 在前台，并在系统对话框中允许访问。",
         "method": {
           "title": "截图方式",

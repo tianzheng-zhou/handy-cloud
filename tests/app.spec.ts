@@ -41,8 +41,21 @@ test("cloud model changes persist; backend errors show a toast and restore the s
     name: "Qwen3.5-Omni Flash",
     exact: true,
   });
+  const flash38 = page.getByRole("button", {
+    name: "Qwen3.8-Omni Flash",
+    exact: true,
+  });
   await plus.click();
   await expect(plus).toHaveAttribute("aria-pressed", "true");
+  await flash38.click();
+  await expect(flash38).toHaveAttribute("aria-pressed", "true");
+  expect(
+    await page.evaluate(() => window.__handyMock.settings.cloud_asr_model),
+  ).toBe("qwen3.8-omni-flash");
+  await page.getByRole("button", { name: "General", exact: true }).click();
+  await page.getByRole("button", { name: "ASR", exact: true }).click();
+  await expect(flash38).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('span[title="Qwen3.8-Omni Flash"]')).toBeVisible();
   await page.evaluate(() => {
     window.__handyMock.failNext = "change_cloud_asr_model";
   });
@@ -50,10 +63,10 @@ test("cloud model changes persist; backend errors show a toast and restore the s
   await expect(
     page.getByText("Could not save settings. Please try again."),
   ).toBeVisible();
-  await expect(plus).toHaveAttribute("aria-pressed", "true");
+  await expect(flash38).toHaveAttribute("aria-pressed", "true");
   expect(
     await page.evaluate(() => window.__handyMock.settings.cloud_asr_model),
-  ).toBe("qwen3.5-omni-plus");
+  ).toBe("qwen3.8-omni-flash");
   expect(errors).toEqual([]);
 });
 

@@ -1,6 +1,6 @@
 # Handy Cloud
 
-基于 [Handy](https://github.com/cjpais/Handy) 的跨平台桌面语音输入工具。按快捷键录音，松开或再次按下后，使用阿里云百炼（DashScope）**Qwen3.5-Omni Flash / Plus** 转写，并将文字粘贴到当前应用。支持 Linux、Windows 和 macOS；本项目优先验证 Linux。
+基于 [Handy](https://github.com/cjpais/Handy) 的跨平台桌面语音输入工具。按快捷键录音，松开或再次按下后，使用阿里云百炼（DashScope）**Qwen3.8-Omni Flash / Qwen3.5-Omni Flash / Plus** 转写，并将文字粘贴到当前应用。支持 Linux、Windows 和 macOS；本项目优先验证 Linux。
 
 本项目使用云端转写，需要网络和你自己的百炼 API Key。语音活动检测（Silero VAD）在本机运行，转写音频会发送到设置中的服务地址。模型调用可能产生百炼费用。
 

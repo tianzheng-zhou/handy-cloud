@@ -1,4 +1,4 @@
-//! Alibaba Bailian / DashScope Qwen3.5-Omni non-realtime transcription.
+//! Alibaba Bailian / DashScope Qwen Omni non-realtime transcription.
 //!
 //! Uses the OpenAI-compatible chat completions API with `input_audio` and
 //! `modalities: ["text"]`. Streaming is required by the Omni API.
@@ -31,10 +31,12 @@ fn http_client() -> Result<&'static reqwest::Client, String> {
 pub const DEFAULT_BASE_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 pub const MODEL_FLASH: &str = "qwen3.5-omni-flash";
 pub const MODEL_PLUS: &str = "qwen3.5-omni-plus";
+pub const MODEL_FLASH_3_8: &str = "qwen3.8-omni-flash";
+pub const SUPPORTED_MODELS: [&str; 3] = [MODEL_FLASH_3_8, MODEL_FLASH, MODEL_PLUS];
 
-/// Screen-context (image + audio) is only wired for current Qwen3.5-Omni models.
+/// Screen-context (image + audio) is supported by the configured Qwen Omni models.
 pub fn supports_screen_context(model: &str) -> bool {
-    matches!(model, MODEL_FLASH | MODEL_PLUS)
+    SUPPORTED_MODELS.contains(&model)
 }
 
 /// The transcription contract, sent as a `system` message.
@@ -133,7 +135,7 @@ pub async fn transcribe_wav(
         "text": prompt
     }));
 
-    let body = json!({
+    let mut body = json!({
         "model": model,
         "messages": [
             {
@@ -148,8 +150,14 @@ pub async fn transcribe_wav(
         "modalities": ["text"],
         "stream": true,
         "stream_options": { "include_usage": true },
-        "enable_thinking": false,
     });
+    // Qwen3.8 defaults to thinking and uses reasoning_effort rather than
+    // enable_thinking. Dictation needs only the transcription, without reasoning.
+    if model == MODEL_FLASH_3_8 {
+        body["reasoning_effort"] = json!("none");
+    } else {
+        body["enable_thinking"] = json!(false);
+    }
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
@@ -241,6 +249,7 @@ mod tests {
     fn screen_context_only_for_omni_models() {
         assert!(supports_screen_context(MODEL_FLASH));
         assert!(supports_screen_context(MODEL_PLUS));
+        assert!(supports_screen_context(MODEL_FLASH_3_8));
         assert!(!supports_screen_context("qwen-audio-asr"));
         assert!(!supports_screen_context(""));
     }
@@ -266,7 +275,7 @@ mod http_tests {
         status: &str,
         body: Vec<u8>,
         stall: bool,
-    ) -> (String, tokio::task::JoinHandle<String>) {
+    ) -> (String, tokio::task::JoinHandle<(String, serde_json::Value)>) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let url = format!("http://{}", listener.local_addr().unwrap());
         let status = status.to_owned();
@@ -289,10 +298,8 @@ mod http_tests {
                 .unwrap();
             let mut payload = vec![0; len];
             socket.read_exact(&mut payload).await.unwrap();
-            assert_eq!(
-                serde_json::from_slice::<serde_json::Value>(&payload).unwrap()["stream"],
-                true
-            );
+            let payload = serde_json::from_slice::<serde_json::Value>(&payload).unwrap();
+            assert_eq!(payload["stream"], true);
             if stall {
                 // Cancellation/timeout must close the request while the server is pending.
                 let closed = tokio::time::timeout(Duration::from_secs(2), socket.read(&mut byte))
@@ -309,7 +316,7 @@ mod http_tests {
                     tokio::task::yield_now().await;
                 }
             }
-            header
+            (header, payload)
         });
         (url, task)
     }
@@ -324,7 +331,54 @@ mod http_tests {
                     .unwrap(),
                 "你好🌍"
             );
-            assert!(task.await.unwrap().contains(&format!("Bearer {key}")));
+            assert!(task.await.unwrap().0.contains(&format!("Bearer {key}")));
+        }
+    }
+
+    #[tokio::test]
+    async fn omni_models_transcribe_audio_and_screen_without_thinking() {
+        for model in [MODEL_FLASH_3_8, MODEL_FLASH, MODEL_PLUS] {
+            for screen in [None, Some(b"jpeg".as_slice())] {
+                let (url, task) = server(
+                    "200 OK",
+                    b"data: {\"choices\":[{\"delta\":{\"content\":\"dictation\"}}]}\n\ndata: [DONE]\n\n"
+                        .to_vec(),
+                    false,
+                )
+                .await;
+                assert_eq!(
+                    transcribe_wav("test", &url, model, b"wav", Some("zh"), screen)
+                        .await
+                        .unwrap(),
+                    "dictation"
+                );
+                let (_, payload) = task.await.unwrap();
+                assert_eq!(payload["model"], model);
+                assert_eq!(payload["modalities"], json!(["text"]));
+                if model == MODEL_FLASH_3_8 {
+                    assert_eq!(payload["reasoning_effort"], "none");
+                    assert!(payload.get("enable_thinking").is_none());
+                } else {
+                    assert_eq!(payload["enable_thinking"], false);
+                    assert!(payload.get("reasoning_effort").is_none());
+                }
+                let content = payload["messages"][1]["content"].as_array().unwrap();
+                let audio = content
+                    .iter()
+                    .find(|part| part["type"] == "input_audio")
+                    .unwrap();
+                assert_eq!(audio["input_audio"]["format"], "wav");
+                assert_eq!(audio["input_audio"]["data"], "data:audio/wav;base64,d2F2");
+                let image = content.iter().find(|part| part["type"] == "image_url");
+                if screen.is_some() {
+                    assert_eq!(
+                        image.unwrap()["image_url"]["url"],
+                        "data:image/jpeg;base64,anBlZw=="
+                    );
+                } else {
+                    assert!(image.is_none());
+                }
+            }
         }
     }
 

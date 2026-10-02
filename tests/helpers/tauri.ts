@@ -152,6 +152,7 @@ export async function mockTauri(page: Page, onboarding = true) {
                 };
               case "get_cloud_asr_models":
                 return [
+                  { id: "qwen3.8-omni-flash", label: "Qwen3.8-Omni Flash" },
                   { id: "qwen3.5-omni-flash", label: "Qwen3.5-Omni Flash" },
                   { id: "qwen3.5-omni-plus", label: "Qwen3.5-Omni Plus" },
                 ];

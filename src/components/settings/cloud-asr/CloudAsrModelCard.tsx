@@ -8,8 +8,8 @@ export type CloudAsrModelCardInfo = {
   nameKey: string;
   descriptionKey: string;
   /** 0–1 relative scores for the bars (visual only) */
-  speedScore: number;
-  accuracyScore: number;
+  speedScore?: number;
+  accuracyScore?: number;
   recommended?: boolean;
   icon: "flash" | "plus";
 };
@@ -90,32 +90,35 @@ export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
           </p>
         </div>
 
-        <div className="hidden sm:flex items-center shrink-0">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-text/60 w-20 text-end">
-                {t("onboarding.modelCard.accuracy")}
-              </p>
-              <div className="w-14 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-logo-primary rounded-full"
-                  style={{ width: `${model.accuracyScore * 100}%` }}
-                />
+        {model.speedScore !== undefined &&
+          model.accuracyScore !== undefined && (
+            <div className="hidden sm:flex items-center shrink-0">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-text/60 w-20 text-end">
+                    {t("onboarding.modelCard.accuracy")}
+                  </p>
+                  <div className="w-14 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-logo-primary rounded-full"
+                      style={{ width: `${model.accuracyScore * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-text/60 w-20 text-end">
+                    {t("onboarding.modelCard.speed")}
+                  </p>
+                  <div className="w-14 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-logo-primary rounded-full"
+                      style={{ width: `${model.speedScore * 100}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-text/60 w-20 text-end">
-                {t("onboarding.modelCard.speed")}
-              </p>
-              <div className="w-14 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-logo-primary rounded-full"
-                  style={{ width: `${model.speedScore * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+          )}
       </div>
 
       <hr className="w-full border-mid-gray/20" />

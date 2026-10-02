@@ -12,6 +12,12 @@ import {
 
 const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
   {
+    id: "qwen3.8-omni-flash",
+    nameKey: "settings.cloudAsr.models.flash38.name",
+    descriptionKey: "settings.cloudAsr.models.flash38.description",
+    icon: "flash",
+  },
+  {
     id: "qwen3.5-omni-flash",
     nameKey: "settings.cloudAsr.models.flash.name",
     descriptionKey: "settings.cloudAsr.models.flash.description",

@@ -1,4 +1,4 @@
-use crate::dashscope_omni::{MODEL_FLASH, MODEL_PLUS};
+use crate::dashscope_omni::{MODEL_FLASH, MODEL_FLASH_3_8, MODEL_PLUS, SUPPORTED_MODELS};
 use crate::screen_context::AuthorizeKind;
 use crate::settings::{update_settings, ScreenCaptureMethod};
 use tauri::AppHandle;
@@ -13,6 +13,10 @@ pub struct CloudAsrModelOption {
 #[specta::specta]
 pub fn get_cloud_asr_models() -> Vec<CloudAsrModelOption> {
     vec![
+        CloudAsrModelOption {
+            id: MODEL_FLASH_3_8.to_string(),
+            label: "Qwen3.8-Omni Flash".to_string(),
+        },
         CloudAsrModelOption {
             id: MODEL_FLASH.to_string(),
             label: "Qwen3.5-Omni Flash".to_string(),
@@ -60,11 +64,11 @@ pub fn change_cloud_asr_base_url(app: AppHandle, base_url: String) -> Result<(),
 #[tauri::command]
 #[specta::specta]
 pub fn change_cloud_asr_model(app: AppHandle, model: String) -> Result<(), String> {
-    let allowed = [MODEL_FLASH, MODEL_PLUS];
-    if !allowed.contains(&model.as_str()) {
+    if !SUPPORTED_MODELS.contains(&model.as_str()) {
         return Err(format!(
-            "Unsupported cloud ASR model '{}'. Use {} or {}.",
-            model, MODEL_FLASH, MODEL_PLUS
+            "Unsupported cloud ASR model '{}'. Use one of: {}.",
+            model,
+            SUPPORTED_MODELS.join(", ")
         ));
     }
     update_settings(&app, |settings| {
