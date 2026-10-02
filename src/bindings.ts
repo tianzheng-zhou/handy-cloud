@@ -619,6 +619,12 @@ async changeCloudAsrScreenCaptureMethod(method: string) : Promise<Result<null, s
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Whether the X11 direct screen capture method is available.
+ */
+async isX11Session() : Promise<boolean> {
+    return await TAURI_INVOKE("is_x11_session");
+},
 async completeCloudAsrOnboarding() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("complete_cloud_asr_onboarding") };
@@ -911,7 +917,11 @@ export type ScreenCaptureMethod =
 /**
  * xdg-desktop-portal ScreenCast + one PipeWire frame (silent after share grant).
  */
-"screencast"
+"screencast" |
+/**
+ * Read the X11 root window directly (X11 sessions only; silent, no prompt).
+ */
+"x11"
 export type SecretMap = Partial<{ [key in string]: string }>
 export type SecureInputStatus = {
 /**

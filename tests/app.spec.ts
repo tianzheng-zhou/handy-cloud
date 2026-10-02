@@ -144,3 +144,47 @@ test("locale loads on demand, switches to Chinese, and is reused on the next swi
     ),
   ).toBe(1);
 });
+
+test("screen capture method can be changed while screen context is off; X11 direct only in X11 sessions", async ({
+  page,
+}) => {
+  await mockTauri(page);
+  await page.addInitScript(() => {
+    window.__handyMock.x11Session = true;
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
+  await expect(
+    page.getByRole("checkbox", { name: "Use screen as context" }),
+  ).not.toBeChecked();
+  await page.getByRole("button", { name: "Screenshot (may flash)" }).click();
+  await page
+    .getByRole("button", { name: "X11 direct (silent, recommended)" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "X11 direct (silent, recommended)" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => window.__handyMock.settings.cloud_asr_screen_capture_method,
+    ),
+  ).toBe("x11");
+  expect(await page.evaluate(() => window.__handyMock.calls)).not.toContain(
+    "change_cloud_asr_screen_context",
+  );
+});
+
+test("X11 direct capture is not offered outside X11 sessions", async ({
+  page,
+}) => {
+  await mockTauri(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
+  await page.getByRole("button", { name: "Screenshot (may flash)" }).click();
+  await expect(
+    page.getByRole("button", { name: "ScreenCast (silent)" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "X11 direct (silent, recommended)" }),
+  ).toHaveCount(0);
+});

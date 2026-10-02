@@ -6,6 +6,7 @@ export interface MockState {
   calls: string[];
   unknown: string[];
   failNext: string | null;
+  x11Session: boolean;
   emit: (event: string, payload: unknown) => void;
 }
 declare global {
@@ -25,7 +26,7 @@ export async function mockTauri(page: Page, onboarding = true) {
         cloud_asr_model: "qwen3.8-omni-flash",
         cloud_asr_base_url: "https://example.invalid/v1",
         cloud_asr_screen_context: false,
-        cloud_asr_screen_capture_method: "auto",
+        cloud_asr_screen_capture_method: "screenshot",
         push_to_talk: true,
         audio_feedback: false,
         audio_feedback_volume: 0.5,
@@ -67,6 +68,7 @@ export async function mockTauri(page: Page, onboarding = true) {
         calls: [],
         unknown: [],
         failNext: null,
+        x11Session: false,
         emit,
       };
       window.__handyMock = state;
@@ -142,6 +144,7 @@ export async function mockTauri(page: Page, onboarding = true) {
                 return { start: false, stop: false };
               case "get_available_microphones":
               case "get_available_output_devices":
+              case "get_available_typing_tools":
                 return [];
               case "get_secure_input_status":
                 return {
@@ -157,6 +160,8 @@ export async function mockTauri(page: Page, onboarding = true) {
                   { id: "qwen3.5-omni-plus", label: "Qwen3.5-Omni Plus" },
                 ];
               case "get_update_capability":
+              case "is_x11_session":
+                return state.x11Session;
               case "is_laptop":
               case "is_recording":
                 return false;
@@ -180,6 +185,10 @@ export async function mockTauri(page: Page, onboarding = true) {
                 return;
               case "change_cloud_asr_model":
                 settings.cloud_asr_model = String(args.model);
+                return;
+              case "change_cloud_asr_screen_capture_method":
+                settings.cloud_asr_screen_capture_method =
+                  args.method as AppSettings["cloud_asr_screen_capture_method"];
                 return;
               case "change_app_language_setting":
                 settings.app_language = String(args.language);

@@ -47,6 +47,12 @@ pub fn is_wayland() -> bool {
             .unwrap_or(false)
 }
 
+/// Check if running in an X11 session (not Wayland, not XWayland).
+#[cfg(target_os = "linux")]
+pub fn is_x11_session() -> bool {
+    !is_wayland() && std::env::var_os("DISPLAY").is_some()
+}
+
 /// Check if running on KDE Plasma desktop environment
 #[cfg(target_os = "linux")]
 pub fn is_kde_plasma() -> bool {

@@ -157,6 +157,8 @@ pub enum ScreenCaptureMethod {
     Screenshot,
     /// xdg-desktop-portal ScreenCast + one PipeWire frame (silent after share grant).
     Screencast,
+    /// Read the X11 root window directly (X11 sessions only; silent, no prompt).
+    X11,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]

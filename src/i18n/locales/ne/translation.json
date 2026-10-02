@@ -289,8 +289,9 @@
         "authorizeFailed": "Could not authorize screen capture. Keep Handy Cloud in front and allow the system dialog.",
         "method": {
           "title": "Screen capture method",
-          "description": "Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
+          "description": "On X11 sessions, X11 direct reads the screen silently with no permission prompt and is recommended. Screenshot uses the system screenshot portal (may flash or play a shutter sound on GNOME). ScreenCast prompts once to share a monitor; switching back later reuses that grant without another dialog. Keep Handy Cloud focused and wait for authorization to finish before recording.",
           "options": {
+            "x11": "X11 direct (silent, recommended)",
             "screenshot": "Screenshot (may flash)",
             "screencast": "ScreenCast (silent)"
           }

@@ -109,9 +109,16 @@ pub fn change_cloud_asr_screen_capture_method(
     let parsed = match method.as_str() {
         "screenshot" => ScreenCaptureMethod::Screenshot,
         "screencast" => ScreenCaptureMethod::Screencast,
+        "x11" if is_x11_session() => ScreenCaptureMethod::X11,
+        "x11" => {
+            return Err(
+                "X11 direct capture needs an X11 session. Use Screenshot or ScreenCast."
+                    .to_string(),
+            );
+        }
         other => {
             return Err(format!(
-                "Unsupported screen capture method '{}'. Use screenshot or screencast.",
+                "Unsupported screen capture method '{}'. Use screenshot, screencast or x11.",
                 other
             ));
         }
@@ -129,6 +136,20 @@ pub fn change_cloud_asr_screen_capture_method(
         crate::screen_context::kickoff_authorize(&app, AuthorizeKind::MethodChange);
     }
     Ok(())
+}
+
+/// Whether the X11 direct screen capture method is available.
+#[tauri::command]
+#[specta::specta]
+pub fn is_x11_session() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        crate::utils::is_x11_session()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        false
+    }
 }
 
 #[tauri::command]

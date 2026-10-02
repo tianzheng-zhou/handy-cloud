@@ -536,6 +536,7 @@ pub fn run(cli_args: CliArgs) {
             commands::cloud_asr::change_cloud_asr_model,
             commands::cloud_asr::change_cloud_asr_screen_context,
             commands::cloud_asr::change_cloud_asr_screen_capture_method,
+            commands::cloud_asr::is_x11_session,
             commands::cloud_asr::complete_cloud_asr_onboarding,
             commands::audio::update_microphone_mode,
             commands::audio::get_microphone_mode,

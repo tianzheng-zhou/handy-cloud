@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { type } from "@tauri-apps/plugin-os";
@@ -6,7 +6,7 @@ import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import type { ScreenCaptureMethod } from "@/bindings";
+import { commands, type ScreenCaptureMethod } from "@/bindings";
 
 interface ScreenContextProps {
   descriptionMode?: "tooltip" | "inline";
@@ -30,6 +30,15 @@ export const ScreenContext: React.FC<ScreenContextProps> = ({
   const enabled = getSetting("cloud_asr_screen_context") || false;
   const method = (getSetting("cloud_asr_screen_capture_method") ||
     "screenshot") as ScreenCaptureMethod;
+  const [isX11, setIsX11] = useState(false);
+
+  useEffect(() => {
+    if (!isLinux) return;
+    void commands
+      .isX11Session()
+      .then(setIsX11)
+      .catch(() => setIsX11(false));
+  }, [isLinux]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -55,6 +64,16 @@ export const ScreenContext: React.FC<ScreenContextProps> = ({
   }, [refreshSettings, t]);
 
   const methodOptions: DropdownOption[] = [
+    // X11 direct capture only works in X11 sessions; keep it listed if it is
+    // somehow already selected so the dropdown never shows a blank value.
+    ...(isX11 || method === "x11"
+      ? [
+          {
+            value: "x11",
+            label: t("settings.advanced.screenContext.method.options.x11"),
+          },
+        ]
+      : []),
     {
       value: "screenshot",
       label: t("settings.advanced.screenContext.method.options.screenshot"),

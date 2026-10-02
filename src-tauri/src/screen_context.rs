@@ -1,7 +1,8 @@
 //! Optional screen-context capture for Qwen Omni multimodal transcription.
 //!
-//! Linux: method is user-selectable — Screenshot portal, or ScreenCast + one
-//! PipeWire frame via `gst-launch-1.0` (silent after share grant).
+//! Linux: method is user-selectable — Screenshot portal, ScreenCast + one
+//! PipeWire frame via `gst-launch-1.0` (silent after share grant), or on X11
+//! sessions a direct read of the root window through GDK (silent, no prompt).
 //! Windows/macOS: xcap monitor capture (method setting ignored).
 
 use image::codecs::jpeg::JpegEncoder;
@@ -32,6 +33,9 @@ const GST_GRAB_TIMEOUT: Duration = Duration::from_secs(6);
 /// Marker in the error text so callers can tell "wedged" from "wrong property".
 #[cfg(target_os = "linux")]
 const GST_TIMEOUT_MARKER: &str = "timed out";
+/// Budget for the GTK main thread to service an X11 root-window grab.
+#[cfg(target_os = "linux")]
+const X11_GRAB_TIMEOUT: Duration = Duration::from_secs(5);
 
 static PENDING: Lazy<Mutex<PendingCapture>> = Lazy::new(|| Mutex::new(PendingCapture::Idle));
 /// Serialize portal / gst work so authorize + hotkey capture don't race.
@@ -375,6 +379,13 @@ fn capture_primary_rgba(app: &AppHandle) -> Result<image::RgbaImage, String> {
                 }
             }
         }
+        ScreenCaptureMethod::X11 => {
+            debug!("Screen context method=x11");
+            capture_via_x11(app).or_else(|e| {
+                warn!("X11 capture failed ({e}); falling back to Screenshot portal");
+                capture_via_screenshot_portal(app, HOTKEY_SCREENSHOT_TIMEOUT)
+            })
+        }
     }
 }
 
@@ -425,7 +436,80 @@ async fn capture_primary_rgba_for_authorize(app: &AppHandle) -> Result<image::Rg
                 }
             })?
         }
+        ScreenCaptureMethod::X11 => {
+            // Nothing to grant on X11; a test grab just confirms it works.
+            info!("Authorizing screen context via X11 direct capture");
+            capture_via_x11(app)
+        }
     }
+}
+
+/// Grab the primary monitor straight from the X11 root window.
+///
+/// GDK is not thread-safe, so the grab runs on the GTK main thread. Callers are
+/// always worker threads (hotkey capture / authorize), never the main thread,
+/// so waiting here cannot deadlock it.
+#[cfg(target_os = "linux")]
+fn capture_via_x11(app: &AppHandle) -> Result<image::RgbaImage, String> {
+    if !crate::utils::is_x11_session() {
+        return Err("X11 direct capture needs an X11 session".to_string());
+    }
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    app.run_on_main_thread(move || {
+        let _ = tx.send(grab_x11_primary_monitor());
+    })
+    .map_err(|e| format!("Could not schedule X11 capture: {}", e))?;
+    rx.recv_timeout(X11_GRAB_TIMEOUT)
+        .map_err(|_| format!("X11 capture timed out after {:?}", X11_GRAB_TIMEOUT))?
+}
+
+#[cfg(target_os = "linux")]
+fn grab_x11_primary_monitor() -> Result<image::RgbaImage, String> {
+    use gtk::gdk::prelude::*;
+    use gtk::{cairo, gdk};
+
+    let display = gdk::Display::default().ok_or("No GDK display")?;
+    let monitor = display
+        .primary_monitor()
+        .or_else(|| display.monitor(0))
+        .ok_or("No monitors available for screenshot")?;
+    let area = monitor.geometry();
+    let root = display
+        .default_screen()
+        .root_window()
+        .ok_or("No X11 root window")?;
+
+    // Geometry is in logical pixels; paint at device scale so HiDPI screens keep
+    // full resolution (encode_jpeg downsizes afterwards).
+    let scale = root.scale_factor().max(1);
+    let (width, height) = (area.width() * scale, area.height() * scale);
+    let mut surface = cairo::ImageSurface::create(cairo::Format::Rgb24, width, height)
+        .map_err(|e| format!("Could not allocate X11 capture surface: {}", e))?;
+    surface.set_device_scale(scale as f64, scale as f64);
+    {
+        let cr = cairo::Context::new(&surface)
+            .map_err(|e| format!("Could not start X11 capture: {}", e))?;
+        cr.set_source_window(&root, -(area.x() as f64), -(area.y() as f64));
+        cr.paint()
+            .map_err(|e| format!("Could not read the X11 root window: {}", e))?;
+    }
+    surface.flush();
+
+    // Rgb24 is native-endian 0xXXRRGGBB, i.e. B, G, R, X bytes on little-endian.
+    let stride = surface.stride() as usize;
+    let data = surface
+        .data()
+        .map_err(|e| format!("Could not access X11 capture pixels: {}", e))?;
+    let (width, height) = (width as usize, height as usize);
+    let mut rgba = Vec::with_capacity(width * height * 4);
+    for row in data.chunks(stride).take(height) {
+        for px in row[..width * 4].chunks_exact(4) {
+            let argb = u32::from_ne_bytes([px[0], px[1], px[2], px[3]]);
+            rgba.extend_from_slice(&[(argb >> 16) as u8, (argb >> 8) as u8, argb as u8, 255]);
+        }
+    }
+    image::RgbaImage::from_raw(width as u32, height as u32, rgba)
+        .ok_or_else(|| "X11 capture produced a truncated image".to_string())
 }
 
 #[cfg(target_os = "linux")]
