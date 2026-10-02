@@ -24,7 +24,7 @@ use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
     OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, Theme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    APPLE_INTELLIGENCE_PROVIDER_ID, OMNI_SELF_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -1250,6 +1250,11 @@ pub async fn fetch_post_process_models(
         .iter()
         .find(|p| p.id == provider_id)
         .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    // Uses whichever Qwen Omni model is configured for cloud ASR.
+    if provider.id == OMNI_SELF_PROVIDER_ID {
+        return Ok(Vec::new());
+    }
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]

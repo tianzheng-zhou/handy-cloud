@@ -308,6 +308,10 @@
           "title": "提供商",
           "description": "选择一个兼容 OpenAI 的提供商。"
         },
+        "omniSelf": {
+          "label": "ASR 模型自身（Qwen Omni）",
+          "description": "由当前的 Qwen Omni 语音识别模型在转写的同一次请求里直接完成后处理，不会产生第二次调用，也不需要另配 API 密钥——使用「云端语音识别」中的模型和百炼 API 密钥。"
+        },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
         },

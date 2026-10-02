@@ -43,7 +43,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "bg": [
     "sidebar.cloudAsr",
@@ -89,7 +91,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "cs": [
     "sidebar.cloudAsr",
@@ -135,7 +139,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "da": [
     "sidebar.cloudAsr",
@@ -181,7 +187,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "de": [
     "sidebar.cloudAsr",
@@ -227,7 +235,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "es": [
     "sidebar.cloudAsr",
@@ -273,7 +283,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "fr": [
     "sidebar.cloudAsr",
@@ -319,7 +331,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "he": [
     "sidebar.cloudAsr",
@@ -365,7 +379,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "hi": [
     "sidebar.cloudAsr",
@@ -411,7 +427,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "it": [
     "sidebar.cloudAsr",
@@ -457,7 +475,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "ja": [
     "sidebar.cloudAsr",
@@ -503,7 +523,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "ko": [
     "sidebar.cloudAsr",
@@ -549,7 +571,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "ne": [
     "sidebar.cloudAsr",
@@ -595,7 +619,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "nl": [
     "sidebar.cloudAsr",
@@ -641,7 +667,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "pl": [
     "sidebar.cloudAsr",
@@ -687,7 +715,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "pt": [
     "sidebar.cloudAsr",
@@ -733,7 +763,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "ru": [
     "sidebar.cloudAsr",
@@ -779,7 +811,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "sv": [
     "sidebar.cloudAsr",
@@ -825,7 +859,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "tr": [
     "sidebar.cloudAsr",
@@ -871,7 +907,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "uk": [
     "sidebar.cloudAsr",
@@ -917,7 +955,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "vi": [
     "sidebar.cloudAsr",
@@ -963,7 +1003,9 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ],
   "zh-TW": [
     "sidebar.cloudAsr",
@@ -1009,6 +1051,8 @@
     "common.selectOption",
     "footer.cloudAsrModel",
     "settings.cloudAsr.scores.accuracy",
-    "settings.cloudAsr.scores.affordability"
+    "settings.cloudAsr.scores.affordability",
+    "settings.postProcessing.api.omniSelf.label",
+    "settings.postProcessing.api.omniSelf.description"
   ]
 }

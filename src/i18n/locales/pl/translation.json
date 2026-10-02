@@ -308,6 +308,10 @@
           "title": "Dostawca",
           "description": "Wybierz dostawcę zgodnego z OpenAI."
         },
+        "omniSelf": {
+          "label": "ASR model itself (Qwen Omni)",
+          "description": "The current Qwen Omni speech model applies the post-processing prompt in the same request that transcribes your audio, so there is no second call and no extra API key. It uses the model and Bailian API key from Cloud ASR."
+        },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence nie jest dostępne na tym urządzeniu. Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym z włączonym Apple Intelligence w Ustawieniach systemowych."
         },

@@ -190,6 +190,9 @@ export async function mockTauri(page: Page, onboarding = true) {
                 settings.cloud_asr_screen_capture_method =
                   args.method as AppSettings["cloud_asr_screen_capture_method"];
                 return;
+              case "set_post_process_provider":
+                settings.post_process_provider_id = String(args.providerId);
+                return;
               case "change_app_language_setting":
                 settings.app_language = String(args.language);
                 return;

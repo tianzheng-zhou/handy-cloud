@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "../../../hooks/useSettings";
 import { commands, type PostProcessProvider } from "@/bindings";
 import type { ModelOption } from "./types";
@@ -10,6 +11,7 @@ type PostProcessProviderState = {
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
   isAppleProvider: boolean;
+  isOmniSelfProvider: boolean;
   appleIntelligenceUnavailable: boolean;
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
@@ -29,8 +31,15 @@ type PostProcessProviderState = {
 };
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
+// Post-processing done by the Qwen Omni ASR model in the transcription request.
+const OMNI_SELF_PROVIDER_ID = "omni_self";
+
+// Providers without their own endpoint, API key or model list.
+const isBuiltInProvider = (providerId: string) =>
+  providerId === APPLE_PROVIDER_ID || providerId === OMNI_SELF_PROVIDER_ID;
 
 export const usePostProcessProviderState = (): PostProcessProviderState => {
+  const { t } = useTranslation();
   const {
     settings,
     isUpdating,
@@ -57,6 +66,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   }, [providers, selectedProviderId]);
 
   const isAppleProvider = selectedProvider?.id === APPLE_PROVIDER_ID;
+  const isOmniSelfProvider = selectedProvider?.id === OMNI_SELF_PROVIDER_ID;
   const [appleIntelligenceUnavailable, setAppleIntelligenceUnavailable] =
     useState(false);
 
@@ -66,11 +76,19 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const model = settings?.post_process_models?.[selectedProviderId] ?? "";
 
   const providerOptions = useMemo<DropdownOption[]>(() => {
-    return providers.map((provider) => ({
+    const options = providers.map((provider) => ({
       value: provider.id,
-      label: provider.label,
+      label:
+        provider.id === OMNI_SELF_PROVIDER_ID
+          ? t("settings.postProcessing.api.omniSelf.label")
+          : provider.label,
     }));
-  }, [providers]);
+    // Settings migrated from older versions append it last; always list it first.
+    return [
+      ...options.filter((option) => option.value === OMNI_SELF_PROVIDER_ID),
+      ...options.filter((option) => option.value !== OMNI_SELF_PROVIDER_ID),
+    ];
+  }, [providers, t]);
 
   const handleProviderSelect = useCallback(
     async (providerId: string) => {
@@ -100,7 +118,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       // a previous provider/base_url can persist and silently 404 at runtime.
       // Skip when the provider isn't configured yet (no API key / empty base URL)
       // to avoid unnecessary backend errors.
-      if (providerId !== APPLE_PROVIDER_ID) {
+      if (!isBuiltInProvider(providerId)) {
         const provider = providers.find((p) => p.id === providerId);
         const apiKey = settings?.post_process_api_keys?.[providerId] ?? "";
         const hasBaseUrl = (provider?.base_url ?? "").trim() !== "";
@@ -168,9 +186,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   );
 
   const handleRefreshModels = useCallback(() => {
-    if (isAppleProvider) return;
+    if (isBuiltInProvider(selectedProviderId)) return;
     void fetchPostProcessModels(selectedProviderId);
-  }, [fetchPostProcessModels, isAppleProvider, selectedProviderId]);
+  }, [fetchPostProcessModels, selectedProviderId]);
 
   const availableModelsRaw = postProcessModelOptions[selectedProviderId] || [];
 
@@ -213,6 +231,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProvider,
     isCustomProvider,
     isAppleProvider,
+    isOmniSelfProvider,
     appleIntelligenceUnavailable,
     baseUrl,
     handleBaseUrlChange,

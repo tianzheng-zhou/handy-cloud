@@ -188,3 +188,63 @@ test("X11 direct capture is not offered outside X11 sessions", async ({
     page.getByRole("button", { name: "X11 direct (silent, recommended)" }),
   ).toHaveCount(0);
 });
+
+test("post-processing can run in the Omni ASR model itself, without API settings", async ({
+  page,
+}) => {
+  await mockTauri(page);
+  await page.addInitScript(() => {
+    const provider = (id: string, label: string) => ({
+      id,
+      label,
+      base_url: `https://${id}.invalid/v1`,
+      allow_base_url_edit: false,
+      models_endpoint: "/models",
+      supports_structured_output: true,
+    });
+    Object.assign(window.__handyMock.settings, {
+      post_process_enabled: true,
+      post_process_provider_id: "openai",
+      // Migrated settings list it last; the UI still shows it first.
+      post_process_providers: [
+        provider("openai", "OpenAI"),
+        {
+          ...provider("omni_self", "ASR model itself (Qwen Omni)"),
+          models_endpoint: null,
+          supports_structured_output: false,
+        },
+      ],
+      post_process_api_keys: { openai: "", omni_self: "" },
+      post_process_models: { openai: "", omni_self: "" },
+      post_process_prompts: [],
+      post_process_selected_prompt_id: null,
+    });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Post Process", exact: true }).click();
+  await expect(page.getByText("API Key", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "OpenAI" }).click();
+  const options = page.getByRole("button", {
+    name: /^(OpenAI|ASR model itself \(Qwen Omni\))$/,
+  });
+  // The dropdown trigger, then the menu with the Omni option listed first.
+  await expect(options).toHaveText([
+    "OpenAI",
+    "ASR model itself (Qwen Omni)",
+    "OpenAI",
+  ]);
+  await options.nth(1).click();
+
+  await expect(page.getByText(/no second call/)).toBeVisible();
+  await expect(page.getByText("API Key", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Model", { exact: true })).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => window.__handyMock.settings.post_process_provider_id,
+    ),
+  ).toBe("omni_self");
+  expect(await page.evaluate(() => window.__handyMock.calls)).not.toContain(
+    "fetch_post_process_models",
+  );
+});

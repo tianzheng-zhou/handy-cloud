@@ -11,6 +11,9 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+/// Post-processing done by the Qwen Omni ASR model itself: the selected prompt
+/// is folded into the transcription request, so there is no second LLM call.
+pub const OMNI_SELF_PROVIDER_ID: &str = "omni_self";
 
 /// Serialize settings writes so concurrent get→modify→write cannot drop fields
 /// (e.g. ScreenCast restore token wiped by a racing settings update).
@@ -582,11 +585,19 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "openai".to_string()
+    OMNI_SELF_PROVIDER_ID.to_string()
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
     let mut providers = vec![
+        PostProcessProvider {
+            id: OMNI_SELF_PROVIDER_ID.to_string(),
+            label: "ASR model itself (Qwen Omni)".to_string(),
+            base_url: "omni://asr-model".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: None,
+            supports_structured_output: false,
+        },
         PostProcessProvider {
             id: "openai".to_string(),
             label: "OpenAI".to_string(),

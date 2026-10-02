@@ -1,4 +1,6 @@
-use crate::actions::process_transcription_output;
+use crate::actions::{
+    omni_self_post_process_prompt, process_omni_post_processed_output, process_transcription_output,
+};
 use crate::dashscope_omni;
 use crate::managers::history::{HistoryManager, PaginatedHistory};
 use crate::settings::get_settings;
@@ -79,6 +81,12 @@ pub async fn retry_history_entry_transcription(
         Some(settings.selected_language.as_str())
     };
 
+    let omni_prompt = if entry.post_process_requested {
+        omni_self_post_process_prompt(&settings)
+    } else {
+        None
+    };
+
     let transcription = dashscope_omni::transcribe_wav_file(
         &settings.cloud_asr_api_key,
         &settings.cloud_asr_base_url,
@@ -86,6 +94,7 @@ pub async fn retry_history_entry_transcription(
         &audio_path,
         language_hint,
         None,
+        omni_prompt.as_deref(),
     )
     .await?;
 
@@ -93,8 +102,12 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    let processed = match omni_prompt {
+        Some(prompt) => process_omni_post_processed_output(&app, &transcription, prompt).await,
+        None => {
+            process_transcription_output(&app, &transcription, entry.post_process_requested).await
+        }
+    };
     history_manager
         .update_transcription(
             id,

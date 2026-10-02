@@ -6,7 +6,9 @@ use crate::dashscope_omni;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::screen_context;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID, OMNI_SELF_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -112,6 +114,38 @@ where
     }
 }
 
+/// The selected post-processing prompt's text, if it exists and is not blank.
+fn selected_post_process_prompt(settings: &AppSettings) -> Option<String> {
+    let prompt_id = settings.post_process_selected_prompt_id.as_ref()?;
+    settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| &prompt.id == prompt_id)
+        .map(|prompt| prompt.prompt.clone())
+        .filter(|prompt| !prompt.trim().is_empty())
+}
+
+/// When the "ASR model itself" provider is selected, the post-processing
+/// prompt to fold into the Qwen Omni transcription request, so post-processing
+/// needs no second LLM call. `None` otherwise.
+pub(crate) fn omni_self_post_process_prompt(settings: &AppSettings) -> Option<String> {
+    if settings.post_process_provider_id != OMNI_SELF_PROVIDER_ID {
+        return None;
+    }
+    if !dashscope_omni::SUPPORTED_MODELS.contains(&settings.cloud_asr_model.as_str()) {
+        warn!(
+            "Post-processing by the ASR model needs a Qwen Omni model, but '{}' is selected",
+            settings.cloud_asr_model
+        );
+        return None;
+    }
+    let prompt = selected_post_process_prompt(settings);
+    if prompt.is_none() {
+        debug!("Post-processing skipped because no non-empty prompt is selected");
+    }
+    prompt
+}
+
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
@@ -125,6 +159,12 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             return None;
         }
     };
+
+    // Handled inside the transcription request (see omni_self_post_process_prompt).
+    if provider.id == OMNI_SELF_PROVIDER_ID {
+        debug!("Post-processing by the ASR model is unavailable for this request");
+        return None;
+    }
 
     let model = settings
         .post_process_models
@@ -442,6 +482,32 @@ pub(crate) async fn process_transcription_output(
     }
 }
 
+/// Output handling for a transcription the Omni model already post-processed
+/// in the same request (see [`omni_self_post_process_prompt`]).
+pub(crate) async fn process_omni_post_processed_output(
+    app: &AppHandle,
+    text: &str,
+    prompt: String,
+) -> ProcessedTranscription {
+    let settings = get_settings(app);
+    let effective_language = resolve_effective_language(app, &settings);
+    let final_text = maybe_convert_chinese_variant(&effective_language, text)
+        .await
+        .unwrap_or_else(|| text.to_string());
+    if is_blank_transcription(&final_text) {
+        return ProcessedTranscription {
+            final_text,
+            post_processed_text: None,
+            post_process_prompt: None,
+        };
+    }
+    ProcessedTranscription {
+        post_processed_text: Some(final_text.clone()),
+        final_text,
+        post_process_prompt: Some(prompt),
+    }
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -682,6 +748,13 @@ impl ShortcutAction for TranscribeAction {
                         None
                     };
                     let screen_jpeg_ref = screen_jpeg.as_deref();
+                    // Post-processing by the ASR model itself happens in this
+                    // same request instead of a second LLM call.
+                    let omni_prompt = if post_process {
+                        omni_self_post_process_prompt(&settings)
+                    } else {
+                        None
+                    };
 
                     let Some(transcription_result) = complete_unless_cancelled(
                         dashscope_omni::transcribe_wav(
@@ -691,6 +764,7 @@ impl ShortcutAction for TranscribeAction {
                             &wav_bytes,
                             language_hint,
                             screen_jpeg_ref,
+                            omni_prompt.as_deref(),
                         ),
                         || rm.was_cancelled_since(cancel_generation),
                     )
@@ -717,13 +791,32 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
-                            if post_process {
+                            if post_process && omni_prompt.is_none() {
                                 show_processing_overlay(&ah);
                             }
-                            let Some(processed) = complete_unless_cancelled(
-                                process_transcription_output(&ah, &transcription, post_process),
-                                || rm.was_cancelled_since(cancel_generation),
-                            )
+                            let output = async {
+                                match omni_prompt {
+                                    Some(prompt) => {
+                                        process_omni_post_processed_output(
+                                            &ah,
+                                            &transcription,
+                                            prompt,
+                                        )
+                                        .await
+                                    }
+                                    None => {
+                                        process_transcription_output(
+                                            &ah,
+                                            &transcription,
+                                            post_process,
+                                        )
+                                        .await
+                                    }
+                                }
+                            };
+                            let Some(processed) = complete_unless_cancelled(output, || {
+                                rm.was_cancelled_since(cancel_generation)
+                            })
                             .await
                             else {
                                 debug!("Transcription operation cancelled during output handling");

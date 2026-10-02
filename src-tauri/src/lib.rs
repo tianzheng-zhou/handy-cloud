@@ -420,6 +420,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
             &wav,
             language_hint,
             None,
+            None,
         )) {
             Ok(out) => text = out,
             Err(e) => {
