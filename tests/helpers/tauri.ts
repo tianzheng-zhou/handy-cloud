@@ -22,7 +22,7 @@ export async function mockTauri(page: Page, onboarding = true) {
         app_language: "en",
         theme: "system",
         cloud_asr_api_key: onboarding ? "test-only-key" : "",
-        cloud_asr_model: "qwen3.5-omni-flash",
+        cloud_asr_model: "qwen3.8-omni-flash",
         cloud_asr_base_url: "https://example.invalid/v1",
         cloud_asr_screen_context: false,
         cloud_asr_screen_capture_method: "auto",

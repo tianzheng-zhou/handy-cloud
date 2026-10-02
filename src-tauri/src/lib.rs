@@ -344,6 +344,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
 
     if args.list_models {
         let models = [
+            (dashscope_omni::MODEL_FLASH_3_8, "Qwen3.8-Omni Flash"),
             (dashscope_omni::MODEL_FLASH, "Qwen3.5-Omni Flash"),
             (dashscope_omni::MODEL_PLUS, "Qwen3.5-Omni Plus"),
         ];

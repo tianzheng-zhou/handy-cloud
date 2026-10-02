@@ -1,15 +1,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Zap, Sparkles } from "lucide-react";
-import Badge from "@/components/ui/Badge";
 
 export type CloudAsrModelCardInfo = {
   id: string;
   nameKey: string;
   descriptionKey: string;
   /** 0–1 relative scores for the bars (visual only) */
-  speedScore?: number;
-  accuracyScore?: number;
+  accuracyScore: number;
+  affordabilityScore: number;
   recommended?: boolean;
   icon: "flash" | "plus";
 };
@@ -20,6 +19,30 @@ interface CloudAsrModelCardProps {
   disabled?: boolean;
   onSelect: (modelId: string) => void;
 }
+
+const ScoreBar: React.FC<{ label: string; score: number }> = ({
+  label,
+  score,
+}) => (
+  <div className="flex items-center gap-3 min-w-0">
+    <span className="shrink-0 whitespace-nowrap text-xs text-text/55">
+      {label}
+    </span>
+    <div
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(score * 100)}
+      className="h-1.5 flex-1 rounded-full bg-mid-gray/20 overflow-hidden"
+    >
+      <div
+        className="h-full rounded-full bg-logo-primary"
+        style={{ width: `${score * 100}%` }}
+      />
+    </div>
+  </div>
+);
 
 export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
   model,
@@ -51,12 +74,12 @@ export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
         }
       }}
       className={[
-        "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200 border-2 w-full min-w-0",
+        "group flex flex-col gap-3 rounded-xl border p-4 text-left w-full min-w-0 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-logo-primary/60",
         active
-          ? "border-logo-primary/50 bg-logo-primary/10"
-          : "border-mid-gray/20",
+          ? "border-logo-primary bg-logo-primary/[0.07] ring-1 ring-logo-primary"
+          : "border-mid-gray/25",
         clickable
-          ? "cursor-pointer hover:border-logo-primary/50 hover:bg-logo-primary/5 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] group"
+          ? "cursor-pointer hover:border-logo-primary/60 hover:bg-mid-gray/[0.04]"
           : active
             ? ""
             : "opacity-50 cursor-not-allowed",
@@ -64,68 +87,60 @@ export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="flex justify-between items-start gap-3 w-full">
-        <div className="flex flex-col items-start flex-1 min-w-0 gap-1">
+      <div className="flex items-start gap-3">
+        <span
+          className={`flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+            active
+              ? "bg-logo-primary/20 text-background-ui"
+              : "bg-mid-gray/10 text-text/50"
+          }`}
+        >
+          <Icon className="size-[18px]" />
+        </span>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Icon
-              className={`w-4 h-4 shrink-0 ${active ? "text-logo-primary" : "text-text/50"}`}
-            />
-            <h3
-              className={`text-base font-semibold text-text ${clickable ? "group-hover:text-logo-primary" : ""} transition-colors`}
-            >
+            <h3 className="text-sm font-semibold text-text leading-5">
               {t(model.nameKey)}
             </h3>
             {model.recommended && (
-              <Badge variant="primary">{t("onboarding.recommended")}</Badge>
-            )}
-            {active && (
-              <Badge variant="primary">
-                <Check className="w-3 h-3 mr-1" />
-                {t("modelSelector.active")}
-              </Badge>
+              <span className="rounded-full bg-logo-primary/20 px-2 text-[11px] font-medium leading-5 text-text/80">
+                {t("onboarding.recommended")}
+              </span>
             )}
           </div>
-          <p className="text-text/60 text-sm leading-relaxed">
-            {t(model.descriptionKey)}
+          <p
+            className="font-mono text-[11px] leading-4 text-text/40 truncate"
+            title={model.id}
+          >
+            {model.id}
           </p>
         </div>
-
-        {model.speedScore !== undefined &&
-          model.accuracyScore !== undefined && (
-            <div className="hidden sm:flex items-center shrink-0">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-text/60 w-20 text-end">
-                    {t("onboarding.modelCard.accuracy")}
-                  </p>
-                  <div className="w-14 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-logo-primary rounded-full"
-                      style={{ width: `${model.accuracyScore * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-text/60 w-20 text-end">
-                    {t("onboarding.modelCard.speed")}
-                  </p>
-                  <div className="w-14 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-logo-primary rounded-full"
-                      style={{ width: `${model.speedScore * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+            active
+              ? "border-background-ui bg-background-ui text-white"
+              : "border-mid-gray/40 group-hover:border-logo-primary"
+          }`}
+        >
+          {active && <Check className="size-3" strokeWidth={3} />}
+        </span>
       </div>
 
-      <hr className="w-full border-mid-gray/20" />
-
-      <p className="text-xs text-text/45 truncate" title={model.id}>
-        {model.id}
+      <p className="text-sm text-text/65 leading-relaxed sm:ps-12">
+        {t(model.descriptionKey)}
       </p>
+
+      <div className="sm:ms-12 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+        <ScoreBar
+          label={t("settings.cloudAsr.scores.accuracy")}
+          score={model.accuracyScore}
+        />
+        <ScoreBar
+          label={t("settings.cloudAsr.scores.affordability")}
+          score={model.affordabilityScore}
+        />
+      </div>
     </div>
   );
 };

@@ -458,7 +458,7 @@ fn default_cloud_asr_base_url() -> String {
 }
 
 fn default_cloud_asr_model() -> String {
-    crate::dashscope_omni::MODEL_FLASH.to_string()
+    crate::dashscope_omni::MODEL_FLASH_3_8.to_string()
 }
 
 const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 2;
@@ -1328,7 +1328,10 @@ mod tests {
         let mut settings: AppSettings = serde_json::from_value(stored.clone())
             .expect("a stored v0.9.0 settings object must keep parsing strictly");
 
-        assert_eq!(settings.cloud_asr_model, crate::dashscope_omni::MODEL_FLASH);
+        assert_eq!(
+            settings.cloud_asr_model,
+            crate::dashscope_omni::MODEL_FLASH_3_8
+        );
         assert_eq!(settings.bindings["transcribe"].current_binding, "f13");
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);

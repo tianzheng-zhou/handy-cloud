@@ -39,7 +39,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "bg": [
     "sidebar.cloudAsr",
@@ -81,7 +84,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "cs": [
     "sidebar.cloudAsr",
@@ -123,7 +129,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "da": [
     "sidebar.cloudAsr",
@@ -165,7 +174,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "de": [
     "sidebar.cloudAsr",
@@ -207,7 +219,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "es": [
     "sidebar.cloudAsr",
@@ -249,7 +264,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "fr": [
     "sidebar.cloudAsr",
@@ -291,7 +309,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "he": [
     "sidebar.cloudAsr",
@@ -333,7 +354,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "hi": [
     "sidebar.cloudAsr",
@@ -375,7 +399,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "it": [
     "sidebar.cloudAsr",
@@ -417,7 +444,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "ja": [
     "sidebar.cloudAsr",
@@ -459,7 +489,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "ko": [
     "sidebar.cloudAsr",
@@ -501,7 +534,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "ne": [
     "sidebar.cloudAsr",
@@ -543,7 +579,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "nl": [
     "sidebar.cloudAsr",
@@ -585,7 +624,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "pl": [
     "sidebar.cloudAsr",
@@ -627,7 +669,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "pt": [
     "sidebar.cloudAsr",
@@ -669,7 +714,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "ru": [
     "sidebar.cloudAsr",
@@ -711,7 +759,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "sv": [
     "sidebar.cloudAsr",
@@ -753,7 +804,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "tr": [
     "sidebar.cloudAsr",
@@ -795,7 +849,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "uk": [
     "sidebar.cloudAsr",
@@ -837,7 +894,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "vi": [
     "sidebar.cloudAsr",
@@ -879,7 +939,10 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ],
   "zh-TW": [
     "sidebar.cloudAsr",
@@ -921,6 +984,9 @@
     "errors.recordingSaveFailed",
     "errors.settingsSaveFailed",
     "common.moreInformation",
-    "common.selectOption"
+    "common.selectOption",
+    "footer.cloudAsrModel",
+    "settings.cloudAsr.scores.accuracy",
+    "settings.cloudAsr.scores.affordability"
   ]
 }

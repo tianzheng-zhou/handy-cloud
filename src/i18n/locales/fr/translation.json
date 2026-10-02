@@ -71,7 +71,8 @@
     "checkForUpdates": "Rechercher des mises à jour",
     "portableUpdateTitle": "Mise à jour manuelle requise",
     "portableUpdateMessage": "Les installations portables ne peuvent pas être mises à jour automatiquement. Pour mettre à jour : téléchargez le dernier installateur NSIS depuis GitHub Releases, installez-le dans le même dossier, puis copiez votre dossier Data/ (paramètres, modèles, enregistrements) de l’ancienne version vers la nouvelle.",
-    "portableUpdateButton": "Ouvrir GitHub Releases"
+    "portableUpdateButton": "Ouvrir GitHub Releases",
+    "cloudAsrModel": "Cloud: {{model}}"
   },
   "settings": {
     "cloudAsr": {
@@ -91,22 +92,26 @@
       "model": {
         "title": "Model",
         "groupTitle": "Models",
-        "description": "Choose Qwen3.8-Omni Flash or Qwen3.5-Omni Flash / Plus.",
+        "description": "Qwen3.8-Omni Flash is recommended; previous-generation models remain available.",
         "placeholder": "Select a model…"
       },
       "models": {
         "flash38": {
           "name": "Qwen3.8-Omni Flash",
-          "description": "Audio and image understanding for transcription with optional screen context. Thinking is disabled for dictation."
+          "description": "Recommended for everyday dictation: accurate, very affordable, and supports screen context."
         },
         "flash": {
           "name": "Qwen3.5-Omni Flash",
-          "description": "Fast and cost-efficient. Best default for everyday dictation."
+          "description": "Previous-generation Flash model, kept as an alternative."
         },
         "plus": {
           "name": "Qwen3.5-Omni Plus",
-          "description": "Higher accuracy for noisy audio and careful transcription. Slightly slower."
+          "description": "Highest accuracy for demanding dictation, at a noticeably higher price."
         }
+      },
+      "scores": {
+        "accuracy": "Accuracy",
+        "affordability": "Affordability"
       }
     },
     "modelSettings": {

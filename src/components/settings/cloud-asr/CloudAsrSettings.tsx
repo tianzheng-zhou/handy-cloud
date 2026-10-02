@@ -10,28 +10,32 @@ import {
   type CloudAsrModelCardInfo,
 } from "./CloudAsrModelCard";
 
+// Rough relative scores. Accuracy follows the published FLEURS word error rates;
+// affordability follows Bailian Beijing standard pricing (checked 2026-10-02).
 const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
   {
     id: "qwen3.8-omni-flash",
     nameKey: "settings.cloudAsr.models.flash38.name",
     descriptionKey: "settings.cloudAsr.models.flash38.description",
+    accuracyScore: 0.85,
+    affordabilityScore: 0.95,
+    recommended: true,
     icon: "flash",
   },
   {
     id: "qwen3.5-omni-flash",
     nameKey: "settings.cloudAsr.models.flash.name",
     descriptionKey: "settings.cloudAsr.models.flash.description",
-    speedScore: 0.95,
     accuracyScore: 0.75,
-    recommended: true,
+    affordabilityScore: 0.55,
     icon: "flash",
   },
   {
     id: "qwen3.5-omni-plus",
     nameKey: "settings.cloudAsr.models.plus.name",
     descriptionKey: "settings.cloudAsr.models.plus.description",
-    speedScore: 0.65,
     accuracyScore: 0.95,
+    affordabilityScore: 0.25,
     icon: "plus",
   },
 ];
@@ -66,7 +70,7 @@ export const CloudAsrSettings: React.FC = () => {
       </div>
 
       <SettingsGroup title={t("settings.cloudAsr.model.groupTitle")}>
-        <div className="flex flex-col gap-3 p-3">
+        <div className="flex flex-col gap-2.5 p-3">
           {CLOUD_ASR_MODELS.map((model) => (
             <CloudAsrModelCard
               key={model.id}
