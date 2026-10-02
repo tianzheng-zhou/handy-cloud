@@ -1,6 +1,16 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Zap, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
+import { QwenIcon } from "@/components/icons";
+
+export type CloudAsrModelFamily = "qwen";
+
+const FAMILY_ICONS: Record<
+  CloudAsrModelFamily,
+  React.FC<{ className?: string }>
+> = {
+  qwen: QwenIcon,
+};
 
 export type CloudAsrModelCardInfo = {
   id: string;
@@ -10,7 +20,7 @@ export type CloudAsrModelCardInfo = {
   accuracyScore: number;
   affordabilityScore: number;
   recommended?: boolean;
-  icon: "flash" | "plus";
+  family: CloudAsrModelFamily;
 };
 
 interface CloudAsrModelCardProps {
@@ -52,7 +62,7 @@ export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const clickable = !active && !disabled;
-  const Icon = model.icon === "flash" ? Zap : Sparkles;
+  const Icon = FAMILY_ICONS[model.family];
 
   const handleActivate = () => {
     if (!clickable) return;
@@ -88,14 +98,8 @@ export const CloudAsrModelCard: React.FC<CloudAsrModelCardProps> = ({
         .join(" ")}
     >
       <div className="flex items-start gap-3">
-        <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            active
-              ? "bg-logo-primary/20 text-background-ui"
-              : "bg-mid-gray/10 text-text/50"
-          }`}
-        >
-          <Icon className="size-[18px]" />
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-mid-gray/10">
+          <Icon className="size-5" />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">

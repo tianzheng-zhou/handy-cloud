@@ -20,7 +20,7 @@ const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
     accuracyScore: 0.85,
     affordabilityScore: 0.95,
     recommended: true,
-    icon: "flash",
+    family: "qwen",
   },
   {
     id: "qwen3.5-omni-flash",
@@ -28,7 +28,7 @@ const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
     descriptionKey: "settings.cloudAsr.models.flash.description",
     accuracyScore: 0.75,
     affordabilityScore: 0.55,
-    icon: "flash",
+    family: "qwen",
   },
   {
     id: "qwen3.5-omni-plus",
@@ -36,7 +36,7 @@ const CLOUD_ASR_MODELS: CloudAsrModelCardInfo[] = [
     descriptionKey: "settings.cloudAsr.models.plus.description",
     accuracyScore: 0.95,
     affordabilityScore: 0.25,
-    icon: "plus",
+    family: "qwen",
   },
 ];
 
