@@ -2,7 +2,7 @@
 
 Handy Cloud is a cloud-transcription fork of [Handy](https://github.com/cjpais/Handy). Report this fork's bugs and propose changes in [tianzheng-zhou/handy-cloud](https://github.com/tianzheng-zhou/handy-cloud). Preserve the upstream copyright and contributor credits.
 
-The current priority is simplification, reliability and Linux support while keeping Windows/macOS compatibility. The feature freeze remains: gather community support in Discussions before proposing new features. Avoid unrelated dependency upgrades. Cloud models and transcription prompts should only change in explicitly reviewed work.
+The current priority is simplification, reliability and Linux support while keeping Windows/macOS compatibility. Open an issue to discuss larger features before starting a PR. Avoid unrelated dependency upgrades. Cloud models and transcription prompts should only change in explicitly reviewed work.
 
 ## Development
 
@@ -16,4 +16,4 @@ Run frontend type/build/lint/format/translation checks, Bun business tests, rele
 
 ## Submissions
 
-Read and follow the full [PR template](.github/PULL_REQUEST_TEMPLATE.md), including **Human Written Description**, Community Feedback and AI Assistance. An assistant must leave a TODO for the human-written section. Bug reports use [.github/ISSUE_TEMPLATE/bug_report.md](.github/ISSUE_TEMPLATE/bug_report.md); features belong in Discussions. Include reproduction, test evidence and affected platforms. Never attach API keys, private recordings or unredacted settings.
+Use the standard GitHub flow: open an [issue](https://github.com/tianzheng-zhou/handy-cloud/issues) with the [bug report](.github/ISSUE_TEMPLATE/bug_report.md) or [feature request](.github/ISSUE_TEMPLATE/feature_request.md) template, then submit a PR that follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md) and links the issue with `Closes #N`. Small, obvious fixes may go straight to a PR. Include reproduction, test evidence and affected platforms, and disclose AI assistance. Never attach API keys, private recordings or unredacted settings.

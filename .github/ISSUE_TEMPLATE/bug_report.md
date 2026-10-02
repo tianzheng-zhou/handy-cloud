@@ -1,37 +1,44 @@
 ---
 name: Bug Report
-about: Create a report to help us improve Handy
+about: Report something that is broken in Handy Cloud
 title: "[BUG] "
 labels: ["bug"]
 assignees: ""
 ---
 
-## Before You Submit
-
-**Please search [existing issues](https://github.com/tianzheng-zhou/handy-cloud/issues) to avoid duplicates.** Your bug may already be reported! Right now it's just me maintaining this project so many issues can be overwhelming! Help me out by checking first.
+<!-- Please search existing issues first: https://github.com/tianzheng-zhou/handy-cloud/issues -->
+<!-- Never paste API keys, private recordings or unredacted settings. -->
 
 ## Bug Description
 
 A clear and concise description of what the bug is.
 
+## Steps to Reproduce
+
+1.
+2.
+3.
+
+## Expected Behavior
+
 ## System Information
 
 **App Version:**
 
-<!-- You can find this in the app settings or about section -->
+<!-- Settings > About -->
 
 **Operating System:**
 
-<!-- e.g., macOS 14.1, Windows 11, Ubuntu 22.04 -->
+<!-- e.g., macOS 14.1, Windows 11, Ubuntu 24.04 -->
 
-**CPU:**
+**Desktop Session (Linux only):**
 
-<!-- e.g., Apple M2, Intel i7-12700K, AMD Ryzen 7 5800X -->
+<!-- e.g., GNOME Wayland, KDE X11 -->
 
-**GPU:**
+**Cloud ASR Model:**
 
-<!-- e.g., Apple M2 GPU, NVIDIA RTX 4080, AMD RX 6800 XT, Intel UHD Graphics -->
+<!-- e.g., qwen3.5-omni-flash / qwen3.5-omni-plus -->
 
 ## Logs
 
-<!-- Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app. -->
+<!-- Attach relevant logs. The log directory is shown in Settings > About. Redact anything sensitive. -->

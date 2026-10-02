@@ -205,11 +205,10 @@ See the [Troubleshooting](README.md#troubleshooting) section in README.md.
 
 ## GitHub workflow for AI coding assistants
 
-**MANDATORY. Before opening any PR, issue, or discussion in this repo: you MUST read the relevant template file and follow it strictly.** That includes sections that look "ceremonial" — checklists, AI Assistance disclosures, "Human Written Description". A generic Summary/Test-plan layout is not acceptable.
+This repo uses the standard GitHub issue → PR flow. Before opening a PR or issue, read the relevant template and fill in its sections instead of using a generic layout.
 
-- **Opening a PR:** Read [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md). Every section listed there is mandatory. If a section requires a human-written paragraph (e.g. "Human Written Description"), leave a clear TODO placeholder and ask the human contributor to fill it in — do not invent their voice.
-- **Opening an issue:** Read [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/). Blank issues are disabled; pick the right template (`bug_report.md` for bugs). Feature requests do not belong in issues — they go to [Discussions](https://github.com/tianzheng-zhou/handy-cloud/discussions) (see `.github/ISSUE_TEMPLATE/config.yml`).
-- **Proposing a feature:** Handy is under a feature freeze. New features require community support gathered in [Discussions](https://github.com/tianzheng-zhou/handy-cloud/discussions) before any PR is opened — see the PR template's "Community Feedback" section.
+- **Opening an issue:** Use [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) — `bug_report.md` for bugs, `feature_request.md` for features.
+- **Opening a PR:** Follow [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md), link the issue with `Closes #N`, and fill in the AI Assistance section.
 - **Translations:** Follow [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md).
 - **Full contributor workflow:** [CONTRIBUTING.md](CONTRIBUTING.md).
 

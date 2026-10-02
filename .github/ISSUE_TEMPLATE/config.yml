@@ -1,5 +1,1 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Feature request or discussion
-    url: https://github.com/tianzheng-zhou/handy-cloud/discussions
-    about: Discuss Handy Cloud changes before proposing new features
+blank_issues_enabled: true

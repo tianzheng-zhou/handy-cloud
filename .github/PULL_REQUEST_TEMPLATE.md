@@ -1,71 +1,26 @@
-## Before Submitting This PR
+## Description
 
-<!--
-HANDY IS UNDERGOING A FEATURE FREEZE. IF YOU ARE SUBMITTING A PR WHICH IS A NEW FEATURE THAT THE COMMUNITY HAS NOT ASKED FOR: PREPARE TO BE REJECTED. IF THE COMMUNITY HAS ASKED FOR IT, OR YOU HAVE EXPLICITLY GATHERED SUPPORT IT MAY STILL BE CONSIDERED.
+<!-- What does this change and why? -->
 
-BUG FIXES ARE THE TOP PRIORITY. THERE ARE 60+ ISSUES TO FIX.
--->
+## Related Issue
 
-**Please confirm you have done the following:**
+<!-- Link the issue this PR resolves. For larger features, please open an issue first to discuss the approach. -->
 
-- [ ] I have searched [existing issues](https://github.com/tianzheng-zhou/handy-cloud/issues) and [pull requests](https://github.com/tianzheng-zhou/handy-cloud/pulls) (including closed ones) to ensure this isn't a duplicate
-- [ ] I have read [CONTRIBUTING.md](https://github.com/tianzheng-zhou/handy-cloud/blob/main/CONTRIBUTING.md)
-
-**If this is a feature or change that was previously closed/rejected:**
-
-- [ ] I have explained in the description below why this should be reconsidered
-- [ ] I have gathered community feedback (link to discussion below)
-
-## Human Written Description
-
-<!-- Describe your changes clearly and concisely
-
-Please write 2-3 sentences in your own words explaining:
-- What problem you noticed or idea you had
-- Why you think this change matters
-
-This section should be YOUR thinking, not AI-generated text. Even if AI helped write the code, we want to hear from you directly. Your perspective as a human is what makes contributions meaningful. Your PR may be rejected if you do not
-include a human-written description.
--->
-
-## Related Issues/Discussions
-
-<!-- Link to related issues, discussions, or previous PRs -->
-<!-- If reopening something previously closed, explain why this should be reconsidered -->
-
-Fixes #
-Discussion:
-
-## Community Feedback
-
-<!--
-PRs with community support are much more likely to be merged.
-
-For features: Link to a discussion where community members have expressed interest.
-For bug fixes: Link to the issue where others have confirmed the bug.
-
-If you haven't gathered feedback yet, consider starting a discussion first:
-https://github.com/tianzheng-zhou/handy-cloud/discussions
-
-It is not explicitly required to gather feedback, but it certainly helps your PR get merged.
--->
+Closes #
 
 ## Testing
 
-<!-- Describe how you tested your changes and if you need help getting additional testing -->
+<!-- How did you test this? Note which platforms were tested natively vs. only via mocks. -->
+
+- [ ] Frontend checks (type / build / lint / format / translations)
+- [ ] Rust tests and Clippy
+- [ ] Manually tested on: <!-- Windows / macOS / Linux (X11 / Wayland) -->
 
 ## Screenshots/Videos (if applicable)
 
-<!-- Add screenshots or videos demonstrating the change -->
-
 ## AI Assistance
 
-<!-- AI-assisted PRs are welcome! Just let us know so we can review appropriately. -->
+<!-- AI-assisted PRs are welcome. This is just context for review. -->
 
 - [ ] No AI was used in this PR
-- [ ] AI was used (please describe below)
-
-**If AI was used:**
-
-- Tools used:
-- How extensively:
+- [ ] AI was used (tools and extent: )
