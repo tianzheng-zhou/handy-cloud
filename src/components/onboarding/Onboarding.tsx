@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { commands } from "@/bindings";
-import HandyTextLogo from "../icons/HandyTextLogo";
+import AppLogo from "../icons/AppLogo";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 
@@ -48,7 +48,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   return (
     <div className="h-screen w-screen flex flex-col p-6 gap-4 inset-0">
       <div className="flex flex-col items-center gap-2 shrink-0">
-        <HandyTextLogo width={200} />
+        <AppLogo size="lg" />
         <p className="text-text/70 max-w-md font-medium mx-auto text-center">
           {t("onboarding.cloudAsr.subtitle")}
         </p>
