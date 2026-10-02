@@ -87,7 +87,9 @@ export const ScreenContext: React.FC<ScreenContextProps> = ({
         grouped={grouped}
       />
 
-      {enabled && isLinux && (
+      {/* Shown even while disabled, so a method whose authorization failed
+          (which turns the toggle back off) can be switched before retrying. */}
+      {isLinux && (
         <SettingContainer
           title={t("settings.advanced.screenContext.method.title")}
           description={t("settings.advanced.screenContext.method.description")}

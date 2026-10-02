@@ -487,7 +487,12 @@ async fn screencast_grab_png(
     info!("ScreenCast: connecting to portal");
     let proxy = Screencast::new()
         .await
-        .map_err(|e| format!("ScreenCast portal unavailable: {}", e))?;
+        .map_err(|e| {
+            format!(
+                "ScreenCast is not supported by this desktop ({}). Switch the screen capture method to Screenshot.",
+                e
+            )
+        })?;
     info!("ScreenCast: create_session");
     let session = proxy
         .create_session(Default::default())
@@ -694,23 +699,37 @@ fn which_gst_launch() -> Option<std::path::PathBuf> {
     })
 }
 
+/// `file://` URI → path. Percent-decoding works on bytes so multi-byte UTF-8
+/// escapes (e.g. a localized `~/图片` Pictures dir) round-trip correctly.
 #[cfg(target_os = "linux")]
 fn file_uri_to_path(uri: &str) -> Result<std::path::PathBuf, String> {
+    use std::os::unix::ffi::OsStringExt;
+
     let rest = uri
         .strip_prefix("file://")
         .ok_or_else(|| format!("Screenshot portal returned non-file URI: {}", uri))?;
-    let decoded = rest
-        .replace("%20", " ")
-        .replace("%2F", "/")
-        .replace("%3A", ":");
-    let path = if decoded.starts_with('/') {
-        std::path::PathBuf::from(decoded)
-    } else if let Some(idx) = decoded.find('/') {
-        std::path::PathBuf::from(&decoded[idx..])
-    } else {
-        return Err(format!("Screenshot portal URI has no path: {}", uri));
-    };
-    Ok(path)
+    // Skip an optional authority (`file://localhost/...`).
+    let encoded = &rest[rest
+        .find('/')
+        .ok_or_else(|| format!("Screenshot portal URI has no path: {}", uri))?..];
+
+    let hex = |b: u8| (b as char).to_digit(16).map(|d| d as u8);
+    let bytes = encoded.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        match (bytes[i], bytes.get(i + 1), bytes.get(i + 2)) {
+            (b'%', Some(&hi), Some(&lo)) if hex(hi).is_some() && hex(lo).is_some() => {
+                decoded.push(hex(hi).unwrap() << 4 | hex(lo).unwrap());
+                i += 3;
+            }
+            (b, _, _) => {
+                decoded.push(b);
+                i += 1;
+            }
+        }
+    }
+    Ok(std::ffi::OsString::from_vec(decoded).into())
 }
 
 /// Fallback: classic Screenshot portal (may flash / play shutter on GNOME).
@@ -825,5 +844,22 @@ mod tests {
         let jpeg = encode_jpeg(img).expect("jpeg");
         assert!(!jpeg.is_empty());
         assert!(jpeg.starts_with(&[0xFF, 0xD8]));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn file_uri_decodes_non_ascii_paths() {
+        assert_eq!(
+            file_uri_to_path(
+                "file:///home/ztz/%E5%9B%BE%E7%89%87/Screenshot%20from%202026-10-02%2023-12-08.png"
+            )
+            .unwrap(),
+            std::path::PathBuf::from("/home/ztz/图片/Screenshot from 2026-10-02 23-12-08.png")
+        );
+        assert_eq!(
+            file_uri_to_path("file://localhost/tmp/a%25b.png").unwrap(),
+            std::path::PathBuf::from("/tmp/a%b.png")
+        );
+        assert!(file_uri_to_path("https://example.com/a.png").is_err());
     }
 }
