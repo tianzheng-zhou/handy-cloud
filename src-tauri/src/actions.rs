@@ -853,7 +853,7 @@ impl ShortcutAction for TranscribeAction {
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 let rm_for_paste = Arc::clone(&rm);
-                                ah.run_on_main_thread(move || {
+                                let paste_job = move || {
                                     let _guard = guard;
                                     if rm_for_paste.was_cancelled_since(cancel_generation) {
                                         debug!("Transcription operation cancelled before paste");
@@ -874,8 +874,17 @@ impl ShortcutAction for TranscribeAction {
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                })
-                                .unwrap_or_else(|e| {
+                                };
+                                // Paste sleeps and simulates keys for up to ~1s. On Linux,
+                                // blocking the GTK main thread stops WebKitGTK presenting
+                                // frames, freezing the overlay spinner until paste ends.
+                                // enigo (own X connection), the clipboard plugin and the
+                                // native paste tools are safe off-main there; macOS input
+                                // APIs still need the main thread.
+                                #[cfg(target_os = "linux")]
+                                drop(tauri::async_runtime::spawn_blocking(paste_job));
+                                #[cfg(not(target_os = "linux"))]
+                                ah.run_on_main_thread(paste_job).unwrap_or_else(|e| {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
                                     change_tray_icon(&ah, TrayIconState::Idle);
