@@ -43,7 +43,7 @@ export async function mockTauri(page: Page, onboarding = true) {
         debug_mode: false,
         experimental_enabled: false,
         show_whats_new_on_update: false,
-        whats_new_last_seen_version: "0.9.4",
+        whats_new_last_seen_version: "0.1.0",
         show_tray_icon: true,
         bindings: {
           transcribe: {
@@ -134,7 +134,7 @@ export async function mockTauri(page: Page, onboarding = true) {
                 emit(String(args.event), args.payload);
                 return;
               case "plugin:app|version":
-                return "0.9.4";
+                return "0.1.0";
               case "plugin:os|locale":
                 return "en-US";
               case "get_app_settings":

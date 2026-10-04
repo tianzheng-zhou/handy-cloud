@@ -1,7 +1,7 @@
 {
   "name": "handy-cloud",
   "private": true,
-  "version": "0.9.4",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
@@ -22,7 +22,8 @@
     "test": "bun test tests/unit",
     "check:nix-deps": "bun scripts/check-nix-deps.ts --check",
     "bindings": "cd src-tauri && cargo run --bin handy-cloud -- --export-bindings",
-    "check:bundle": "bun scripts/check-bundle.ts"
+    "check:bundle": "bun scripts/check-bundle.ts",
+    "version:bump": "bun scripts/bump-version.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",

@@ -145,9 +145,11 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     );
     headers.insert(
         USER_AGENT,
-        HeaderValue::from_static(
-            "Handy-Cloud/0.9.4 (+https://github.com/tianzheng-zhou/handy-cloud)",
-        ),
+        HeaderValue::from_static(concat!(
+            "Handy-Cloud/",
+            env!("CARGO_PKG_VERSION"),
+            " (+https://github.com/tianzheng-zhou/handy-cloud)"
+        )),
     );
     headers.insert("X-Title", HeaderValue::from_static("Handy Cloud"));
 
