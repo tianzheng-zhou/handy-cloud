@@ -151,6 +151,40 @@ jobs:
           Write-Host "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
           Add-Content -Path $env:GITHUB_ENV -Value "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
 
+      # ort's prebuilt ONNX Runtime has no x86_64 macOS build and needs glibc
+      # 2.38+ on Linux, so these two targets link a baseline build dynamically.
+      - name: Install ONNX Runtime (x86_64 macOS)
+        if: inputs.target == 'x86_64-apple-darwin'
+        shell: bash
+        run: |
+          ORT_VERSION="1.24.2"
+          curl --fail --location --retry 3 -o ort.tgz "https://blob.handy.computer/onnxruntime-osx-x86_64-${ORT_VERSION}.tgz"
+          tar xzf ort.tgz
+          ORT_DIR="$(pwd)/onnxruntime-osx-x86_64-${ORT_VERSION}"
+          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> "$GITHUB_ENV"
+          echo "ORT_PREFER_DYNAMIC_LINK=1" >> "$GITHUB_ENV"
+          # Bundle the versioned dylib (matches the install name @rpath/libonnxruntime.1.24.2.dylib)
+          jq --arg lib "$ORT_DIR/lib/libonnxruntime.${ORT_VERSION}.dylib" \
+            '.bundle.macOS.frameworks = [$lib]' \
+            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
+      - name: Install ONNX Runtime (x86_64 Linux, Ubuntu 22.04)
+        if: contains(inputs.platform, 'ubuntu-22.04') && inputs.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          ORT_VERSION="1.24.2"
+          curl --fail --location --retry 3 -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz"
+          tar xzf ort.tgz
+          ORT_DIR="$(pwd)/onnxruntime-linux-x64-${ORT_VERSION}"
+          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> "$GITHUB_ENV"
+          echo "ORT_PREFER_DYNAMIC_LINK=1" >> "$GITHUB_ENV"
+          # Ship only the SONAME the binary needs, as a real file, in the
+          # app-private dir on its rpath (issue #1639: keep out of /usr/lib).
+          cp -L "$ORT_DIR/lib/libonnxruntime.so.1" "$ORT_DIR/libonnxruntime.so.1"
+          jq --arg so1 "$ORT_DIR/libonnxruntime.so.1" \
+            '.bundle.linux.deb.files["/usr/lib/Handy Cloud/libonnxruntime.so.1"] = $so1' \
+            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
       - name: Download VAD model
         shell: bash
         run: |

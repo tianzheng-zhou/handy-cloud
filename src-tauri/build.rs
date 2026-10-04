@@ -4,6 +4,13 @@ fn main() {
 
     generate_tray_translations();
 
+    // The Ubuntu 22.04 deb links ONNX Runtime dynamically and ships it in the
+    // app-private `/usr/lib/Handy Cloud` (kept out of the ldconfig-scanned
+    // `/usr/lib`, issue #1639). Other Linux builds link it statically.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("linux") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib/Handy Cloud");
+    }
+
     tauri_build::build()
 }
 
