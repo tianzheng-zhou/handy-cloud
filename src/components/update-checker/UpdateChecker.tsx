@@ -190,10 +190,12 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
       <button
         className={className}
         onClick={() =>
-          void openUrl("https://github.com/tianzheng-zhou/handy-cloud/releases")
+          void openUrl(
+            "https://github.com/tianzheng-zhou/handy-cloud/releases/latest",
+          )
         }
       >
-        {t("updater.manualDownload")}
+        {t("footer.checkForUpdates")}
       </button>
     );
   }

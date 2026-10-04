@@ -596,7 +596,6 @@
     "cloud": "Cloud"
   },
   "updater": {
-    "manualDownload": "下载 Handy Cloud",
     "downloading": "正在下载…",
     "downloadingCount": "正在下载 {{count}} 项…"
   }

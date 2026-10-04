@@ -596,7 +596,6 @@
     "cloud": "Cloud"
   },
   "updater": {
-    "manualDownload": "Download Handy Cloud",
     "downloading": "Downloading…",
     "downloadingCount": "Downloading {{count}} items…"
   }
