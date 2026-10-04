@@ -22,6 +22,7 @@ const JPEG_QUALITY: u8 = 80;
 /// Soft cap on JPEG bytes before we re-encode at lower quality.
 const MAX_JPEG_BYTES: usize = 2 * 1024 * 1024;
 /// Hotkey ScreenCast budget (portal restore + gst). 6s was too tight in practice.
+#[cfg(target_os = "linux")]
 const HOTKEY_SCREENCAST_TIMEOUT: Duration = Duration::from_secs(15);
 /// Hotkey Screenshot-portal budget. The portal answers in well under a second
 /// once permission is granted; anything longer means it is wedged.
@@ -182,6 +183,7 @@ pub enum AuthorizeKind {
     MethodChange,
 }
 
+#[cfg(target_os = "linux")]
 fn has_screencast_token(app: &AppHandle) -> bool {
     crate::settings::get_screencast_restore_token(app).is_some()
 }

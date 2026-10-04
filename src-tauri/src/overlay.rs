@@ -736,11 +736,11 @@ mod tests {
                 PhysicalPosition::new(-2560, -200),
                 PhysicalSize::new(2560, 1440),
                 1.25,
-                OVERLAY_STREAM_WIDTH,
-                OVERLAY_STREAM_HEIGHT,
+                OVERLAY_WIDTH,
+                OVERLAY_HEIGHT,
                 OverlayPosition::Bottom,
             ),
-            (-1530, 1040, 500, 150)
+            (-1440, 1132, 320, 58)
         );
     }
 }

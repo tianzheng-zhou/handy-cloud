@@ -3,7 +3,9 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::{info, warn};
+use log::info;
+#[cfg(target_os = "linux")]
+use log::warn;
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -64,10 +66,8 @@ fn paste_via_clipboard(
     // On GNOME Wayland enigo usually cannot inject into the focused app; we still
     // attempt it, but must not restore the previous clipboard afterwards or the
     // transcript becomes unavailable for a manual Ctrl+V.
-    let mut used_enigo_key_combo = false;
     if !key_combo_sent {
         info!("Falling back to enigo for clipboard paste key combo");
-        used_enigo_key_combo = true;
         match paste_method {
             // The legacy path cannot detect a mistimed chord, so it keeps the
             // conservative 100ms modifier hold.
@@ -81,7 +81,7 @@ fn paste_via_clipboard(
     std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
 
     #[cfg(target_os = "linux")]
-    let skip_clipboard_restore = is_wayland() && used_enigo_key_combo;
+    let skip_clipboard_restore = is_wayland() && !key_combo_sent;
     #[cfg(not(target_os = "linux"))]
     let skip_clipboard_restore = false;
 

@@ -127,6 +127,7 @@ mod imp {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
     use std::time::{Duration, Instant};
+    use tauri::Emitter;
 
     /// How often the monitor thread polls.
     const POLL_INTERVAL: Duration = Duration::from_secs(1);
