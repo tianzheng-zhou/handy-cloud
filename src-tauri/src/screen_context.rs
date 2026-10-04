@@ -503,8 +503,8 @@ fn grab_x11_primary_monitor() -> Result<image::RgbaImage, String> {
     let (width, height) = (width as usize, height as usize);
     let mut rgba = Vec::with_capacity(width * height * 4);
     for row in data.chunks(stride).take(height) {
-        for px in row[..width * 4].chunks_exact(4) {
-            let argb = u32::from_ne_bytes([px[0], px[1], px[2], px[3]]);
+        for px in row[..width * 4].as_chunks::<4>().0 {
+            let argb = u32::from_ne_bytes(*px);
             rgba.extend_from_slice(&[(argb >> 16) as u8, (argb >> 8) as u8, argb as u8, 255]);
         }
     }
