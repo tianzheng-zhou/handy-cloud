@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.1.0-1"
+version = "0.1.0-2"
 description = "Handy Cloud - cloud speech to text"
 authors = ["cjpais"]
 edition = "2021"
