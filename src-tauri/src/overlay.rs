@@ -46,6 +46,24 @@ tauri_panel! {
 const OVERLAY_WIDTH: f64 = 256.0;
 const OVERLAY_HEIGHT: f64 = 46.0;
 
+/// Overlay window size for the current desktop. WebKitGTK zooms page content by
+/// the text-scaling factor (Xft.dpi / 96, e.g. 1.25 under Cinnamon/GNOME "text
+/// scaling"), but not the native window, so a 216px working pill becomes 270px
+/// and gets clipped by a 256px window. Grow the window by the same factor.
+fn overlay_size() -> (f64, f64) {
+    #[cfg(target_os = "linux")]
+    let scale = {
+        use gtk::prelude::*;
+        gtk::Settings::default()
+            .map(|settings| settings.gtk_xft_dpi())
+            .filter(|dpi| *dpi > 0)
+            .map_or(1.0, |dpi| (dpi as f64 / 1024.0 / 96.0).clamp(0.5, 4.0))
+    };
+    #[cfg(not(target_os = "linux"))]
+    let scale = 1.0;
+    (OVERLAY_WIDTH * scale, OVERLAY_HEIGHT * scale)
+}
+
 static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
 const EMIT_THROTTLE_MS: u64 = 33; // ~30 FPS
 
@@ -478,7 +496,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
 
 fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
     // Size the overlay for this state (compact recording feedback), then position it.
-    let (width, height) = (OVERLAY_WIDTH, OVERLAY_HEIGHT);
+    let (width, height) = overlay_size();
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         #[cfg(target_os = "linux")]
         update_gtk_layer_shell_anchors(&overlay_window);
