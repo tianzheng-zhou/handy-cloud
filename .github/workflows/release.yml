@@ -2,9 +2,12 @@ name: Release
 
 # Pushing a v* tag tests on every shipped OS, builds unsigned packages and
 # opens a draft GitHub Release for review. Bump with `bun run version:bump`.
+# A manual run (Actions → Release → Run workflow) does the same tests and
+# builds without a tag, leaving packages as Actions artifacts and no Release.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Tag matches declared versions
+        if: github.ref_type == 'tag'
         shell: bash
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -101,6 +105,7 @@ jobs:
 
   release:
     needs: build
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     permissions:
       contents: write

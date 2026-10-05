@@ -69,7 +69,7 @@ bun run tauri build --bundles appimage,rpm
 
 Artifacts are in `src-tauri/target/release/bundle/` (or the target triple's directory when cross-compiling). Binary: `handy-cloud` / `handy-cloud.exe`; macOS app: `Handy Cloud.app`. Build natively on each OS for package validation.
 
-Ordinary packages are unsigned (macOS uses ad-hoc signing). No publisher credentials or updater keys are required. The **Main Branch Build** workflow is manual and builds the full Linux/macOS/Windows matrix (including ARM) as downloadable Actions artifacts without creating a Release. OS signing/notarization is not set up.
+Ordinary packages are unsigned (macOS uses ad-hoc signing). No publisher credentials or updater keys are required. To trial the full pipeline without a tag, run the **Release** workflow manually (Actions → Release → Run workflow): it runs the same tests and builds the full Linux/macOS/Windows matrix (including ARM) as downloadable Actions artifacts, without creating a Release. OS signing/notarization is not set up.
 
 ## Releasing
 
@@ -83,7 +83,7 @@ git tag v0.2.0
 git push origin main v0.2.0
 ```
 
-The **Release** workflow checks that the tag matches the declared version, runs the Checks workflow plus native Rust tests/Clippy on Windows and macOS, builds Linux x64/arm64 (deb, AppImage, rpm), Windows x64/arm64 (NSIS, MSI) and macOS (Apple Silicon, Intel), then opens a **draft** Release with notes from `scripts/release-notes.ts`. Review the notes and publish it manually. A tag containing `-` is marked as a pre-release; the MSI bundler only accepts a numeric pre-release identifier, so use e.g. `v0.2.0-1` rather than `v0.2.0-rc.1`. Linux x64 is verified on hardware; ARM, Windows and macOS packages are labelled experimental in the notes until verified on real machines.
+The **Release** workflow checks that the tag matches the declared version, runs the Checks workflow plus native Rust tests/Clippy on Windows and macOS, builds Linux x64/arm64 (deb, AppImage, rpm), Windows x64/arm64 (NSIS, MSI) and macOS (Apple Silicon, Intel), then opens a **draft** Release with notes from `scripts/release-notes.ts`. Review the notes and publish it manually. Tags are for real releases only; trial the pipeline with a manual run instead. A tag containing `-` is marked as a pre-release; the MSI bundler only accepts a numeric pre-release identifier, so use e.g. `v0.2.0-1` rather than `v0.2.0-rc.1`. Linux x64 is verified on hardware; ARM, Windows and macOS packages are labelled experimental in the notes until verified on real machines.
 
 Updater controls and tray entry are governed by `get_update_capability`. To enable later, configure this project's HTTPS endpoint and public key, enable updater artifacts, and provide the matching signing key only to a dedicated release process. Never reuse the upstream endpoint/key. Follow [Tauri's updater signing requirements](https://v2.tauri.app/plugin/updater/#signing-updates).
 
